@@ -3,12 +3,15 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const calculateOvertimePay = require('./overtimeCalculator');
 const initDatabase = require('./database');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
+
+app.use('/api/users', userRoutes);
 
 app.post('/api/calculate', (req, res) => {
   const { salary, endHour, minutes } = req.body;
