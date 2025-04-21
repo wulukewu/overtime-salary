@@ -1,10 +1,12 @@
 const express = require('express');
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const calculateOvertimePay = require('./overtimeCalculator');
 
 const app = express();
 const PORT = 3000;
 
+app.use(cors());
 app.use(bodyParser.json());
 
 app.post('/api/calculate', (req, res) => {

@@ -9,7 +9,7 @@ const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {
   if (!dbExists) {
-    console.log("Database does not exist. Initializing...");
+    console.log('Database does not exist. Initializing...');
 
     // Table for overtime records (later we'll link users)
     db.run(`
@@ -23,9 +23,9 @@ db.serialize(() => {
       )
     `);
 
-    console.log("Initialized base overtime_records table.");
+    console.log('Initialized base overtime_records table.');
   } else {
-    console.log("Database already exists. Skipping initialization.");
+    console.log('Database already exists. Skipping initialization.');
   }
 });
 
