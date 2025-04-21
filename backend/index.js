@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const calculateOvertimePay = require('./overtimeCalculator');
+const initDatabase = require('./database');
 
 const app = express();
 const PORT = 3000;
@@ -26,4 +27,10 @@ app.post('/api/calculate', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+});
+
+initDatabase().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 });

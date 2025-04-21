@@ -65,7 +65,11 @@ export default {
         });
 
         const data = await response.json();
-        this.result = data.result;
+        if (data.result) {
+          this.result = data.result;
+        } else {
+          this.result = data.error || 'Error calculating pay';
+        }
       } catch (error) {
         console.error('API call failed:', error);
         this.result = 'Error calculating pay';
@@ -83,18 +87,13 @@ export default {
 }
 label {
   display: block;
-  margin: 0.5rem 0;
-}
-input {
-  width: 100%;
-  padding: 0.4rem;
+  margin-bottom: 1rem;
 }
 button {
   margin-top: 1rem;
-  padding: 0.5rem 1rem;
 }
 .result {
-  margin-top: 1rem;
+  margin-top: 2rem;
   font-weight: bold;
 }
 </style>
