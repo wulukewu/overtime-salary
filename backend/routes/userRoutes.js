@@ -129,16 +129,9 @@ router.post('/change-password', authenticate, async (req, res) => {
 
   try {
     // Get user's current password
-    const user = await new Promise((resolve, reject) => {
-      db.get(
-        'SELECT password FROM users WHERE id = ?',
-        [req.userId],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
-    });
+    const user = await get('SELECT password FROM users WHERE id = ?', [
+      req.userId,
+    ]);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -154,16 +147,10 @@ router.post('/change-password', authenticate, async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
 
     // Update password
-    await new Promise((resolve, reject) => {
-      db.run(
-        'UPDATE users SET password = ? WHERE id = ?',
-        [hashedPassword, req.userId],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
-    });
+    await run('UPDATE users SET password = ? WHERE id = ?', [
+      hashedPassword,
+      req.userId,
+    ]);
 
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
@@ -173,51 +160,55 @@ router.post('/change-password', authenticate, async (req, res) => {
 });
 
 // Admin: Get all users
-router.get('/users', authenticate, isAdmin, (req, res) => {
-  db.all('SELECT id, name, email, is_admin FROM users', (err, users) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error fetching users' });
-    }
+router.get('/users', authenticate, isAdmin, async (req, res) => {
+  try {
+    const users = await all('SELECT id, username, email, is_admin FROM users');
     res.json(users);
-  });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Error fetching users' });
+  }
 });
 
 // Admin: Reset user password
-router.post('/users/:id/reset-password', authenticate, isAdmin, (req, res) => {
-  const { id } = req.params;
-  const newPassword = Math.random().toString(36).slice(-8); // Generate random password
+router.post(
+  '/users/:id/reset-password',
+  authenticate,
+  isAdmin,
+  async (req, res) => {
+    const { id } = req.params;
+    const newPassword = Math.random().toString(36).slice(-8); // Generate random password
 
-  bcrypt.hash(newPassword, SALT_ROUNDS, (err, hashedPassword) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error hashing password' });
+    try {
+      const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+      await run(
+        'UPDATE users SET password = ?, force_password_change = 1 WHERE id = ?',
+        [hashedPassword, id]
+      );
+
+      res.json({
+        message: 'Password reset successfully',
+        newPassword, // In production, this should be sent via email
+      });
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      res.status(500).json({ error: 'Error resetting password' });
     }
-
-    db.run(
-      'UPDATE users SET password = ?, force_password_change = 1 WHERE id = ?',
-      [hashedPassword, id],
-      (err) => {
-        if (err) {
-          return res.status(500).json({ error: 'Error resetting password' });
-        }
-        res.json({
-          message: 'Password reset successfully',
-          newPassword, // In production, this should be sent via email
-        });
-      }
-    );
-  });
-});
+  }
+);
 
 // Admin: Delete user
-router.delete('/users/:id', authenticate, isAdmin, (req, res) => {
+router.delete('/users/:id', authenticate, isAdmin, async (req, res) => {
   const { id } = req.params;
 
-  db.run('DELETE FROM users WHERE id = ?', [id], (err) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error deleting user' });
-    }
+  try {
+    await run('DELETE FROM users WHERE id = ?', [id]);
     res.json({ message: 'User deleted successfully' });
-  });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Error deleting user' });
+  }
 });
 
 // Update user profile
@@ -297,5 +288,75 @@ router.put('/settings', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Failed to update settings' });
   }
 });
+
+// Admin: Change user role
+router.put('/users/:id/role', authenticate, isAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { is_admin } = req.body;
+
+  if (is_admin === undefined) {
+    return res.status(400).json({ error: 'is_admin field is required' });
+  }
+
+  try {
+    // Check if user exists
+    const user = await get('SELECT id FROM users WHERE id = ?', [id]);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update user role
+    await run('UPDATE users SET is_admin = ? WHERE id = ?', [
+      is_admin ? 1 : 0,
+      id,
+    ]);
+    res.json({ message: 'User role updated successfully' });
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    res.status(500).json({ error: 'Error updating user role' });
+  }
+});
+
+// Admin: Set user password
+router.post(
+  '/users/:id/set-password',
+  authenticate,
+  isAdmin,
+  async (req, res) => {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    try {
+      // Check if user exists
+      const user = await get('SELECT id FROM users WHERE id = ?', [id]);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+      // Update password
+      await run('UPDATE users SET password = ? WHERE id = ?', [
+        hashedPassword,
+        id,
+      ]);
+      res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+      console.error('Error setting password:', error);
+      res.status(500).json({ error: 'Error setting password' });
+    }
+  }
+);
 
 module.exports = router;
