@@ -80,9 +80,9 @@ export default {
   name: 'OvertimeDashboard',
   setup() {
     const store = useStore();
-    const salary = ref(null);
-    const end_hour = ref(null);
-    const minutes = ref(null);
+    const salary = ref(0);
+    const end_hour = ref(19);
+    const minutes = ref(0);
     const result = ref(null);
     const error = ref('');
     const loading = ref(false);
@@ -94,6 +94,43 @@ export default {
       error.value = '';
       loading.value = true;
       try {
+        // Validate inputs
+        if (
+          salary.value === null ||
+          salary.value === undefined ||
+          salary.value === ''
+        ) {
+          throw new Error('Please enter a monthly salary');
+        }
+        if (
+          end_hour.value === null ||
+          end_hour.value === undefined ||
+          end_hour.value === ''
+        ) {
+          throw new Error('Please enter an end hour');
+        }
+        if (
+          minutes.value === null ||
+          minutes.value === undefined ||
+          minutes.value === ''
+        ) {
+          throw new Error('Please enter minutes');
+        }
+
+        const requestBody = {
+          salary: Number(salary.value),
+          end_hour: Number(end_hour.value),
+          minutes: Number(minutes.value),
+        };
+
+        console.log('Form values:', {
+          salary: salary.value,
+          end_hour: end_hour.value,
+          minutes: minutes.value,
+        });
+        console.log('Request body:', requestBody);
+        console.log('Token:', store.state.token);
+
         const response = await fetch(
           'http://localhost:3000/api/overtime/calculate',
           {
@@ -102,19 +139,20 @@ export default {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${store.state.token}`,
             },
-            body: JSON.stringify({
-              salary: salary.value,
-              end_hour: end_hour.value,
-              minutes: minutes.value,
-            }),
+            body: JSON.stringify(requestBody),
           }
         );
+
+        console.log('Response status:', response.status);
         const data = await response.json();
+        console.log('Response data:', data);
+
         if (!response.ok) {
           throw new Error(data.error || 'Failed to calculate overtime');
         }
         result.value = data.result;
       } catch (err) {
+        console.error('Error in calculateOvertime:', err);
         error.value = err.message;
         result.value = null;
       } finally {
@@ -125,13 +163,15 @@ export default {
     const saveRecord = async () => {
       saving.value = true;
       try {
-        const response = await fetch('http://localhost:3000/api/overtime', {
+        const currentDate = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+        const response = await fetch('http://localhost:3000/api/overtime/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${store.state.token}`,
           },
           body: JSON.stringify({
+            date: currentDate,
             salary: salary.value,
             end_hour: end_hour.value,
             minutes: minutes.value,
@@ -139,14 +179,16 @@ export default {
           }),
         });
         if (!response.ok) {
-          throw new Error('Failed to save record');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to save record');
         }
         await fetchRecords();
         result.value = null;
-        salary.value = null;
-        end_hour.value = null;
-        minutes.value = null;
+        salary.value = 0;
+        end_hour.value = 19;
+        minutes.value = 0;
       } catch (err) {
+        console.error('Error saving record:', err);
         error.value = err.message;
       } finally {
         saving.value = false;

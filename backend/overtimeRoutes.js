@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const db = require('./database').db;
-const { calculateOvertimePay } = require('./overtimeCalculator');
+const calculateOvertimePay = require('./overtimeCalculator');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-jwt-key';
 
@@ -42,29 +42,94 @@ router.get('/', authenticate, (req, res) => {
 // Create a new overtime record
 router.post('/', authenticate, (req, res) => {
   const userId = req.userId;
-  const { date, salary, end_hour, minutes } = req.body;
+  const { date, salary, end_hour, minutes, calculated_pay } = req.body;
 
-  if (!date || !salary || !end_hour || !minutes) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  console.log('Received save request:', {
+    userId,
+    date,
+    salary,
+    end_hour,
+    minutes,
+    calculated_pay,
+  });
+
+  // Check for missing fields
+  const missingFields = [];
+  if (date === undefined || date === null || date === '')
+    missingFields.push('date');
+  if (salary === undefined || salary === null) missingFields.push('salary');
+  if (end_hour === undefined || end_hour === null)
+    missingFields.push('end_hour');
+  if (minutes === undefined || minutes === null) missingFields.push('minutes');
+  if (calculated_pay === undefined || calculated_pay === null)
+    missingFields.push('calculated_pay');
+
+  if (missingFields.length > 0) {
+    console.log('Missing fields:', missingFields);
+    return res.status(400).json({
+      error: 'Missing required fields',
+      missingFields,
+    });
   }
 
-  const calculated_pay = calculateOvertimePay(salary, end_hour, minutes);
+  // Validate data types
+  if (isNaN(Number(salary))) {
+    console.log('Invalid salary:', salary);
+    return res.status(400).json({ error: 'Invalid salary format' });
+  }
+  if (isNaN(Number(end_hour))) {
+    console.log('Invalid end_hour:', end_hour);
+    return res.status(400).json({ error: 'Invalid end_hour format' });
+  }
+  if (isNaN(Number(minutes))) {
+    console.log('Invalid minutes:', minutes);
+    return res.status(400).json({ error: 'Invalid minutes format' });
+  }
+  if (isNaN(Number(calculated_pay))) {
+    console.log('Invalid calculated_pay:', calculated_pay);
+    return res.status(400).json({ error: 'Invalid calculated_pay format' });
+  }
+
+  // Convert to numbers
+  const numSalary = Number(salary);
+  const numEndHour = Number(end_hour);
+  const numMinutes = Number(minutes);
+  const numCalculatedPay = Number(calculated_pay);
+
+  console.log('Converted values:', {
+    salary: numSalary,
+    end_hour: numEndHour,
+    minutes: numMinutes,
+    calculated_pay: numCalculatedPay,
+  });
 
   db.run(
     'INSERT INTO overtime_records (user_id, date, salary, end_hour, minutes, calculated_pay) VALUES (?, ?, ?, ?, ?, ?)',
-    [userId, date, salary, end_hour, minutes, calculated_pay],
+    [userId, date, numSalary, numEndHour, numMinutes, numCalculatedPay],
     function (err) {
       if (err) {
-        return res.status(500).json({ error: 'Database error' });
+        console.error('Database error:', err);
+        return res
+          .status(500)
+          .json({ error: 'Failed to save record', details: err.message });
       }
+      console.log('Record saved successfully:', {
+        id: this.lastID,
+        user_id: userId,
+        date,
+        salary: numSalary,
+        end_hour: numEndHour,
+        minutes: numMinutes,
+        calculated_pay: numCalculatedPay,
+      });
       res.status(201).json({
         id: this.lastID,
         user_id: userId,
         date,
-        salary,
-        end_hour,
-        minutes,
-        calculated_pay,
+        salary: numSalary,
+        end_hour: numEndHour,
+        minutes: numMinutes,
+        calculated_pay: numCalculatedPay,
       });
     }
   );
@@ -72,22 +137,54 @@ router.post('/', authenticate, (req, res) => {
 
 // Calculate overtime pay without saving
 router.post('/calculate', authenticate, (req, res) => {
+  console.log('Received request body:', req.body);
+  console.log('Request headers:', req.headers);
+
   const { salary, end_hour, minutes } = req.body;
 
-  if (!salary || !end_hour || !minutes) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  // Log each field separately
+  console.log('Parsed fields:', {
+    salary: {
+      value: salary,
+      type: typeof salary,
+      isNumber: !isNaN(Number(salary)),
+    },
+    end_hour: {
+      value: end_hour,
+      type: typeof end_hour,
+      isNumber: !isNaN(Number(end_hour)),
+    },
+    minutes: {
+      value: minutes,
+      type: typeof minutes,
+      isNumber: !isNaN(Number(minutes)),
+    },
+  });
+
+  // Check if fields exist and are valid numbers
+  if (salary === undefined || salary === null || isNaN(Number(salary))) {
+    return res.status(400).json({ error: 'Invalid salary' });
+  }
+  if (end_hour === undefined || end_hour === null || isNaN(Number(end_hour))) {
+    return res.status(400).json({ error: 'Invalid end hour' });
+  }
+  if (minutes === undefined || minutes === null || isNaN(Number(minutes))) {
+    return res.status(400).json({ error: 'Invalid minutes' });
   }
 
-  // Convert to numbers to ensure proper type
+  // Convert to numbers
   const numSalary = Number(salary);
   const numEndHour = Number(end_hour);
   const numMinutes = Number(minutes);
 
-  if (isNaN(numSalary) || isNaN(numEndHour) || isNaN(numMinutes)) {
-    return res.status(400).json({ error: 'Invalid number format' });
-  }
+  console.log('Converted values:', {
+    salary: numSalary,
+    end_hour: numEndHour,
+    minutes: numMinutes,
+  });
 
   const result = calculateOvertimePay(numSalary, numEndHour, numMinutes);
+  console.log('Calculation result:', result);
   res.json({ result });
 });
 
