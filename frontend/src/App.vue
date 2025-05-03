@@ -1,13 +1,39 @@
 <template>
   <div id="app">
-    <nav v-if="isAuthenticated" class="navbar">
-      <div class="nav-brand">Overtime Salary</div>
-      <div class="nav-links">
-        <router-link to="/dashboard">Dashboard</router-link>
-        <router-link to="/profile">Profile</router-link>
-        <router-link v-if="isAdmin" to="/admin">Admin</router-link>
-        <router-link to="/settings">Settings</router-link>
-        <button @click="handleLogout" class="logout-btn">Logout</button>
+    <nav>
+      <div class="nav-left">
+        <router-link to="/">Home</router-link>
+        <router-link to="/dashboard" v-if="isAuthenticated"
+          >Dashboard</router-link
+        >
+      </div>
+      <div class="nav-right">
+        <template v-if="isAuthenticated">
+          <div class="user-dropdown">
+            <span
+              class="username"
+              @mouseover="showDropdown = true"
+              @mouseleave="showDropdown = false"
+            >
+              {{ username }}
+              <i class="dropdown-icon">▼</i>
+            </span>
+            <div
+              class="dropdown-menu"
+              v-show="showDropdown"
+              @mouseover="showDropdown = true"
+              @mouseleave="showDropdown = false"
+            >
+              <router-link to="/profile">Profile</router-link>
+              <router-link to="/settings">Settings</router-link>
+              <a @click="logout">Logout</a>
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <router-link to="/login">Login</router-link>
+          <router-link to="/register">Register</router-link>
+        </template>
       </div>
     </nav>
     <router-view />
@@ -15,7 +41,7 @@
 </template>
 
 <script>
-import { computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 
@@ -24,19 +50,44 @@ export default {
   setup() {
     const store = useStore();
     const router = useRouter();
+    const showDropdown = ref(false);
+    const username = ref('');
 
-    const isAuthenticated = computed(() => store.getters.isAuthenticated);
-    const isAdmin = computed(() => store.getters.isAdmin);
+    const isAuthenticated = computed(() => store.state.token !== null);
 
-    const handleLogout = () => {
+    const logout = () => {
       store.dispatch('logout');
       router.push('/login');
     };
 
+    const fetchUserProfile = async () => {
+      if (store.state.token) {
+        try {
+          const response = await fetch(
+            'http://localhost:3000/api/users/profile',
+            {
+              headers: {
+                Authorization: `Bearer ${store.state.token}`,
+              },
+            }
+          );
+          if (response.ok) {
+            const data = await response.json();
+            username.value = data.name;
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      }
+    };
+
+    onMounted(fetchUserProfile);
+
     return {
       isAuthenticated,
-      isAdmin,
-      handleLogout,
+      username,
+      showDropdown,
+      logout,
     };
   },
 };
@@ -47,56 +98,87 @@ export default {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-align: center;
   color: #2c3e50;
 }
 
-.navbar {
+nav {
+  padding: 30px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
   background-color: #f8f9fa;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.nav-brand {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #4caf50;
-}
-
-.nav-links {
+.nav-left,
+.nav-right {
   display: flex;
-  gap: 1rem;
-  align-items: center;
+  gap: 20px;
 }
 
-.nav-links a {
-  text-decoration: none;
+nav a {
+  font-weight: bold;
   color: #2c3e50;
-  padding: 0.5rem 1rem;
+  text-decoration: none;
+  padding: 8px 16px;
   border-radius: 4px;
+  transition: background-color 0.3s;
 }
 
-.nav-links a:hover {
+nav a:hover {
   background-color: #e9ecef;
 }
 
-.nav-links a.router-link-active {
-  color: #4caf50;
-  font-weight: bold;
+nav a.router-link-exact-active {
+  color: #42b983;
+  background-color: #e9ecef;
 }
 
-.logout-btn {
-  padding: 0.5rem 1rem;
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 4px;
+.user-dropdown {
+  position: relative;
+}
+
+.username {
   cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.logout-btn:hover {
-  background-color: #c82333;
+.dropdown-icon {
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 150px;
+  z-index: 1000;
+}
+
+.dropdown-menu a {
+  display: block;
+  padding: 8px 16px;
+  text-align: left;
+  color: #2c3e50;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.dropdown-menu a:hover {
+  background-color: #f8f9fa;
+}
+
+.dropdown-menu a:last-child {
+  border-top: 1px solid #e9ecef;
+  color: #dc3545;
 }
 </style>
