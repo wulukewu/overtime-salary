@@ -49,24 +49,16 @@ export default {
     const handleLogin = async () => {
       loading.value = true;
       try {
-        const response = await fetch('http://localhost:3000/api/users/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            login: loginInput.value,
-            password: password.value,
-          }),
+        const result = await store.dispatch('login', {
+          login: loginInput.value,
+          password: password.value,
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          store.dispatch('login', data.token);
+        if (result.success) {
           router.push('/dashboard');
         } else {
-          const data = await response.json();
-          alert(data.error || 'Login failed');
+          console.error('Login failed:', result.error);
+          alert(result.error || 'Login failed');
         }
       } catch (error) {
         console.error('Login error:', error);

@@ -73,8 +73,10 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { login, password } = req.body;
+    console.log('Login attempt:', { login, password });
 
     if (!login || !password) {
+      console.log('Missing credentials:', { login, password });
       return res.status(400).json({ error: 'Login and password are required' });
     }
 
@@ -83,13 +85,18 @@ router.post('/login', async (req, res) => {
       'SELECT * FROM users WHERE email = ? OR username = ?',
       [login, login]
     );
+    console.log('User found:', user);
 
     if (!user) {
+      console.log('No user found for login:', login);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('Password validation:', isPasswordValid);
+
     if (!isPasswordValid) {
+      console.log('Invalid password for user:', login);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -104,6 +111,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
+    console.log('Login successful for user:', login);
     res.json({ token, username: user.username });
   } catch (error) {
     console.error('Login error:', error);

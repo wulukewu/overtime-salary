@@ -55,9 +55,19 @@ export default createStore({
         if (response.ok) {
           console.log('Login successful, storing token:', data.token);
           commit('setToken', data.token);
-          if (data.user) {
-            commit('setUser', data.user);
-            commit('setAdmin', data.user.is_admin || false);
+          // Fetch user profile after successful login
+          const profileResponse = await fetch(
+            'http://localhost:3000/api/users/profile',
+            {
+              headers: {
+                Authorization: `Bearer ${data.token}`,
+              },
+            }
+          );
+          const profileData = await profileResponse.json();
+          if (profileResponse.ok) {
+            commit('setUser', profileData);
+            commit('setAdmin', profileData.is_admin || false);
           }
           return { success: true };
         } else {
