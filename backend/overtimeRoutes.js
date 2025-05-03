@@ -1,33 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const db = require('./database').db;
+const { all, get, run } = require('./database');
 const calculateOvertimePay = require('./overtimeCalculator');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-jwt-key';
-
-// Middleware to authenticate the user using JWT
-const authenticate = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
-    req.userId = decoded.id;
-    next();
-  });
-};
+const authenticate = require('./auth');
 
 // Get all overtime records for the authenticated user
 router.get('/', authenticate, async (req, res) => {
   try {
     const userId = req.userId;
-    const records = await db.all(
+    const records = await all(
       `SELECT r.*, g.name as group_name 
        FROM overtime_records r 
        LEFT JOIN groups g ON r.group_id = g.id 
@@ -50,13 +31,29 @@ router.post('/', authenticate, async (req, res) => {
     const userId = req.userId;
 
     // Validate required fields
-    if (!date || !salary || !end_hour || !minutes || !calculated_pay) {
+    if (
+      !date ||
+      !salary ||
+      !end_hour ||
+      minutes === undefined ||
+      !calculated_pay
+    ) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate end_hour and minutes
+    if (end_hour < 19) {
+      return res.status(400).json({ error: 'End hour must be 19 or later' });
+    }
+    if (minutes < 0 || minutes > 59) {
+      return res
+        .status(400)
+        .json({ error: 'Minutes must be between 0 and 59' });
     }
 
     // If group_id is provided, verify it belongs to the user
     if (group_id) {
-      const group = await db.get(
+      const group = await get(
         'SELECT * FROM groups WHERE id = ? AND user_id = ?',
         [group_id, userId]
       );
@@ -65,7 +62,7 @@ router.post('/', authenticate, async (req, res) => {
       }
     }
 
-    const result = await db.run(
+    const result = await run(
       'INSERT INTO overtime_records (user_id, group_id, date, salary, end_hour, minutes, calculated_pay) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [userId, group_id, date, salary, end_hour, minutes, calculated_pay]
     );
@@ -89,60 +86,30 @@ router.post('/', authenticate, async (req, res) => {
 router.post('/calculate', (req, res) => {
   const { salary, end_hour, minutes } = req.body;
 
-  console.log('Received request body:', req.body);
-  console.log('Parsed fields:', {
-    salary: { value: salary, type: typeof salary },
-    end_hour: { value: end_hour, type: typeof end_hour },
-    minutes: { value: minutes, type: typeof minutes },
-  });
-
-  // Check for missing fields
-  if (salary === undefined || salary === null) {
-    return res.status(400).json({ error: 'Monthly salary is required' });
-  }
-  if (end_hour === undefined || end_hour === null) {
-    return res.status(400).json({ error: 'End hour is required' });
-  }
-  if (minutes === undefined || minutes === null) {
-    return res.status(400).json({ error: 'Minutes are required' });
+  if (!salary || !end_hour || minutes === undefined) {
+    return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  // Convert to numbers and validate
-  const salaryNum = Number(salary);
-  const endHourNum = Number(end_hour);
-  const minutesNum = Number(minutes);
-
-  if (isNaN(salaryNum) || salaryNum < 0) {
-    return res.status(400).json({ error: 'Invalid monthly salary' });
-  }
-  if (isNaN(endHourNum) || endHourNum < 19) {
+  // Validate end_hour and minutes
+  if (end_hour < 19) {
     return res.status(400).json({ error: 'End hour must be 19 or later' });
   }
-  if (isNaN(minutesNum) || minutesNum < 0 || minutesNum > 59) {
+  if (minutes < 0 || minutes > 59) {
     return res.status(400).json({ error: 'Minutes must be between 0 and 59' });
   }
 
-  // Calculate overtime pay
-  const hourlyRate = salaryNum / 30 / 8; // Assuming 8 hours per day
-  const overtimeHours = endHourNum - 19 + minutesNum / 60;
-  const overtimePay = hourlyRate * overtimeHours * 1.5; // 1.5x for overtime
-
-  console.log('Calculation result:', {
-    hourlyRate,
-    overtimeHours,
-    overtimePay,
-  });
-
-  res.json({ result: Math.round(overtimePay * 100) / 100 });
+  const result = calculateOvertimePay(salary, end_hour, minutes);
+  res.json({ result });
 });
 
+// Delete an overtime record
 router.delete('/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.userId;
 
     // First verify the record belongs to the user
-    const record = await db.get(
+    const record = await get(
       'SELECT * FROM overtime_records WHERE id = ? AND user_id = ?',
       [id, userId]
     );
@@ -152,7 +119,7 @@ router.delete('/:id', authenticate, async (req, res) => {
     }
 
     // Delete the record
-    await db.run('DELETE FROM overtime_records WHERE id = ?', [id]);
+    await run('DELETE FROM overtime_records WHERE id = ?', [id]);
     res.status(200).json({ message: 'Record deleted successfully' });
   } catch (error) {
     console.error('Error deleting record:', error);

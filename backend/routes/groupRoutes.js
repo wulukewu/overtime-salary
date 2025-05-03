@@ -1,13 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database');
-const authenticate = require('../middleware/auth');
+const { all, get, run } = require('../database');
+const authenticate = require('../auth');
 
 // Get all groups for the authenticated user
 router.get('/', authenticate, async (req, res) => {
   try {
-    const groups = await db.all(
-      'SELECT * FROM groups WHERE user_id = ? ORDER BY sort_order ASC',
+    const groups = await all(
+      'SELECT g.*, COUNT(r.id) as record_count ' +
+        'FROM groups g ' +
+        'LEFT JOIN overtime_records r ON g.id = r.group_id ' +
+        'WHERE g.user_id = ? ' +
+        'GROUP BY g.id ' +
+        'ORDER BY g.sort_order ASC',
       [req.userId]
     );
     res.json(groups);
@@ -26,13 +31,13 @@ router.post('/', authenticate, async (req, res) => {
     }
 
     // Get the highest sort_order
-    const maxOrder = await db.get(
+    const maxOrder = await get(
       'SELECT MAX(sort_order) as maxOrder FROM groups WHERE user_id = ?',
       [req.userId]
     );
     const newOrder = (maxOrder?.maxOrder || 0) + 1;
 
-    const result = await db.run(
+    const result = await run(
       'INSERT INTO groups (user_id, name, sort_order) VALUES (?, ?, ?)',
       [req.userId, name, newOrder]
     );
@@ -41,6 +46,7 @@ router.post('/', authenticate, async (req, res) => {
       id: result.lastID,
       name,
       sort_order: newOrder,
+      record_count: 0,
     });
   } catch (error) {
     console.error('Error creating group:', error);
@@ -55,7 +61,7 @@ router.put('/:id', authenticate, async (req, res) => {
     const { name, sort_order } = req.body;
 
     // Verify the group belongs to the user
-    const group = await db.get(
+    const group = await get(
       'SELECT * FROM groups WHERE id = ? AND user_id = ?',
       [id, req.userId]
     );
@@ -65,11 +71,11 @@ router.put('/:id', authenticate, async (req, res) => {
     }
 
     if (name) {
-      await db.run('UPDATE groups SET name = ? WHERE id = ?', [name, id]);
+      await run('UPDATE groups SET name = ? WHERE id = ?', [name, id]);
     }
 
     if (sort_order !== undefined) {
-      await db.run('UPDATE groups SET sort_order = ? WHERE id = ?', [
+      await run('UPDATE groups SET sort_order = ? WHERE id = ?', [
         sort_order,
         id,
       ]);
@@ -88,7 +94,7 @@ router.delete('/:id', authenticate, async (req, res) => {
     const { id } = req.params;
 
     // Verify the group belongs to the user
-    const group = await db.get(
+    const group = await get(
       'SELECT * FROM groups WHERE id = ? AND user_id = ?',
       [id, req.userId]
     );
@@ -98,13 +104,13 @@ router.delete('/:id', authenticate, async (req, res) => {
     }
 
     // Move all records to the default group (null)
-    await db.run(
+    await run(
       'UPDATE overtime_records SET group_id = NULL WHERE group_id = ?',
       [id]
     );
 
     // Delete the group
-    await db.run('DELETE FROM groups WHERE id = ?', [id]);
+    await run('DELETE FROM groups WHERE id = ?', [id]);
 
     res.json({ message: 'Group deleted successfully' });
   } catch (error) {

@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const calculateOvertimePay = require('./overtimeCalculator');
 const { initDatabase } = require('./database');
 const userRoutes = require('./routes/userRoutes');
-const overtimeRoutes = require('./routes/overtimeRoutes');
+const overtimeRoutes = require('./overtimeRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 
 const app = express();

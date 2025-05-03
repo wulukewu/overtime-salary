@@ -1,158 +1,110 @@
 const express = require('express');
 const router = express.Router();
-const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const db = new sqlite3.Database('./database.sqlite');
+const { all, get, run } = require('../database');
+const authenticate = require('../auth');
 
 const SALT_ROUNDS = 10;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-jwt-key';
 
-// Middleware to authenticate the user using JWT
-const authenticate = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ error: 'Unauthorized access' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
-    req.userId = decoded.id;
-    next();
-  });
-};
-
 // Middleware to check if user is admin
-const isAdmin = (req, res, next) => {
-  db.get(
-    'SELECT is_admin FROM users WHERE id = ?',
-    [req.userId],
-    (err, row) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (!row || !row.is_admin) {
-        return res.status(403).json({ error: 'Admin access required' });
-      }
-      next();
+const isAdmin = async (req, res, next) => {
+  try {
+    const row = await get('SELECT is_admin FROM users WHERE id = ?', [
+      req.userId,
+    ]);
+    if (!row || !row.is_admin) {
+      return res.status(403).json({ error: 'Admin access required' });
     }
-  );
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: 'Database error' });
+  }
 };
 
 // User registration
 router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+  const { email, password } = req.body;
+  console.log('Registration attempt:', { email });
 
-  if (!name || !email || !password) {
+  if (!email || !password) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
   try {
     // Check if user already exists
-    db.get(
-      'SELECT id FROM users WHERE email = ?',
-      [email],
-      async (err, existingUser) => {
-        if (err) {
-          return res.status(500).json({ error: 'Database error' });
-        }
+    const existingUser = await get('SELECT * FROM users WHERE email = ?', [
+      email,
+    ]);
+    console.log('Existing user check:', existingUser);
 
-        if (existingUser) {
-          return res.status(400).json({ error: 'Email already registered' });
-        }
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already exists' });
+    }
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    console.log('Password hashed successfully');
 
-        // Create new user
-        db.run(
-          'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
-          [name, email, hashedPassword],
-          function (err) {
-            if (err) {
-              return res.status(500).json({ error: 'Error creating user' });
-            }
-
-            const token = jwt.sign(
-              {
-                id: this.lastID,
-                email: email,
-                isAdmin: false,
-              },
-              JWT_SECRET,
-              { expiresIn: '24h' }
-            );
-
-            res.status(201).json({
-              token,
-              user: {
-                id: this.lastID,
-                name,
-                email,
-                is_admin: false,
-              },
-            });
-          }
-        );
-      }
+    // Create user
+    const result = await run(
+      'INSERT INTO users (email, password) VALUES (?, ?)',
+      [email, hashedPassword]
     );
+    console.log('User created with ID:', result.lastID);
+
+    // Generate JWT token
+    const token = jwt.sign({ id: result.lastID }, JWT_SECRET);
+
+    res.status(201).json({
+      id: result.lastID,
+      email,
+      token,
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error registering user:', error);
+    res.status(500).json({ error: 'Failed to register user' });
   }
 });
 
 // User login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
+  console.log('Login attempt:', { email });
 
   if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
+    return res.status(400).json({ error: 'All fields are required' });
   }
 
   try {
-    db.get(
-      'SELECT * FROM users WHERE email = ?',
-      [email],
-      async (err, user) => {
-        if (err) {
-          return res.status(500).json({ error: 'Database error' });
-        }
+    const user = await get('SELECT * FROM users WHERE email = ?', [email]);
+    console.log('User found:', user);
 
-        if (!user) {
-          return res.status(401).json({ error: 'Invalid credentials' });
-        }
+    if (!user) {
+      console.log('No user found with email:', email);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-        const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) {
-          return res.status(401).json({ error: 'Invalid credentials' });
-        }
+    const validPassword = await bcrypt.compare(password, user.password);
+    console.log('Password validation:', validPassword);
 
-        const token = jwt.sign(
-          {
-            id: user.id,
-            email: user.email,
-            isAdmin: user.is_admin === 1,
-          },
-          JWT_SECRET,
-          { expiresIn: '24h' }
-        );
+    if (!validPassword) {
+      console.log('Invalid password for user:', email);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-        res.json({
-          token,
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            is_admin: user.is_admin === 1,
-          },
-        });
-      }
-    );
+    const token = jwt.sign({ id: user.id }, JWT_SECRET);
+    console.log('Login successful for user:', email);
+
+    res.json({
+      id: user.id,
+      email: user.email,
+      token,
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error logging in:', error);
+    res.status(500).json({ error: 'Failed to login' });
   }
 });
 
@@ -277,43 +229,40 @@ router.put('/profile', authenticate, (req, res) => {
   );
 });
 
-// Protected route to get user profile
-router.get('/profile', authenticate, (req, res) => {
-  db.get(
-    'SELECT id, name, email, is_admin FROM users WHERE id = ?',
-    [req.userId],
-    (err, user) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      res.json(user);
+// Get user profile
+router.get('/profile', authenticate, async (req, res) => {
+  try {
+    const user = await get('SELECT id, email FROM users WHERE id = ?', [
+      req.userId,
+    ]);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  );
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
 });
 
 // Get user settings
-router.get('/settings', authenticate, (req, res) => {
-  db.get(
-    'SELECT monthly_salary FROM users WHERE id = ?',
-    [req.userId],
-    (err, row) => {
-      if (err) {
-        console.error('Error fetching user settings:', err);
-        return res.status(500).json({ error: 'Error fetching user settings' });
-      }
-      if (!row) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      res.json({ monthly_salary: row.monthly_salary || 0 });
+router.get('/settings', authenticate, async (req, res) => {
+  try {
+    const user = await get('SELECT monthly_salary FROM users WHERE id = ?', [
+      req.userId,
+    ]);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  );
+    res.json({ monthly_salary: user.monthly_salary || 0 });
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
 });
 
 // Update user settings
-router.put('/settings', authenticate, (req, res) => {
+router.put('/settings', authenticate, async (req, res) => {
   const { monthly_salary } = req.body;
 
   if (monthly_salary === undefined || monthly_salary === null) {
@@ -325,17 +274,16 @@ router.put('/settings', authenticate, (req, res) => {
     return res.status(400).json({ error: 'Invalid monthly salary' });
   }
 
-  db.run(
-    'UPDATE users SET monthly_salary = ? WHERE id = ?',
-    [salary, req.userId],
-    (err) => {
-      if (err) {
-        console.error('Error updating user settings:', err);
-        return res.status(500).json({ error: 'Error updating user settings' });
-      }
-      res.json({ monthly_salary: salary });
-    }
-  );
+  try {
+    await run('UPDATE users SET monthly_salary = ? WHERE id = ?', [
+      salary,
+      req.userId,
+    ]);
+    res.json({ monthly_salary: salary });
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    res.status(500).json({ error: 'Failed to update settings' });
+  }
 });
 
 module.exports = router;

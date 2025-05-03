@@ -15,9 +15,10 @@ const initDatabase = async () => {
       db.run(`
         CREATE TABLE IF NOT EXISTS users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          username TEXT UNIQUE NOT NULL,
+          email TEXT UNIQUE NOT NULL,
           password TEXT NOT NULL,
-          monthly_salary REAL DEFAULT 0
+          monthly_salary REAL DEFAULT 0,
+          is_admin BOOLEAN DEFAULT 0
         )
       `);
 
@@ -34,7 +35,8 @@ const initDatabase = async () => {
       `);
 
       // Create overtime_records table
-      db.run(`
+      db.run(
+        `
         CREATE TABLE IF NOT EXISTS overtime_records (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           user_id INTEGER NOT NULL,
@@ -48,58 +50,87 @@ const initDatabase = async () => {
           FOREIGN KEY (user_id) REFERENCES users(id),
           FOREIGN KEY (group_id) REFERENCES groups(id)
         )
-      `);
-
-      // Always check for admin user
-      db.get(
-        'SELECT id FROM users WHERE email = ?',
-        ['admin@system.local'],
-        (err, existingUser) => {
+      `,
+        async (err) => {
           if (err) {
-            console.error('Error checking for admin user:', err);
             reject(err);
             return;
           }
 
-          if (existingUser) {
-            console.log('Admin user exists');
-            resolve(db);
-            return;
-          }
+          try {
+            // Check if admin user exists
+            const adminUser = await new Promise((resolve, reject) => {
+              db.get(
+                'SELECT * FROM users WHERE email = ?',
+                ['admin@system.local'],
+                (err, row) => {
+                  if (err) reject(err);
+                  else resolve(row);
+                }
+              );
+            });
 
-          // Create admin user if it doesn't exist
-          console.log('Creating admin user...');
-          const defaultPassword = 'admin';
-          bcrypt.hash(defaultPassword, SALT_ROUNDS, (err, hashedPassword) => {
-            if (err) {
-              console.error('Error hashing admin password:', err);
-              reject(err);
-              return;
+            if (!adminUser) {
+              console.log('Creating admin user...');
+              const defaultPassword = 'admin';
+              const hashedPassword = await bcrypt.hash(
+                defaultPassword,
+                SALT_ROUNDS
+              );
+
+              await new Promise((resolve, reject) => {
+                db.run(
+                  'INSERT INTO users (email, password, is_admin) VALUES (?, ?, ?)',
+                  ['admin@system.local', hashedPassword, 1],
+                  function (err) {
+                    if (err) reject(err);
+                    else resolve(this);
+                  }
+                );
+              });
+
+              console.log(
+                'Admin user created (email: admin@system.local, password: admin)'
+              );
             }
 
-            db.run(
-              'INSERT INTO users (name, email, password, is_admin) VALUES (?, ?, ?, ?)',
-              ['Admin', 'admin@system.local', hashedPassword, 1],
-              (err) => {
-                if (err) {
-                  console.error('Error creating admin user:', err);
-                  reject(err);
-                  return;
-                }
-                console.log(
-                  'Admin user created (email: admin@system.local, password: admin)'
-                );
-                resolve(db);
-              }
-            );
-          });
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
         }
       );
     });
   });
 };
 
+// Export the database instance and initDatabase function
 module.exports = {
   db,
   initDatabase,
+  // Add helper methods for database operations
+  all: (sql, params) => {
+    return new Promise((resolve, reject) => {
+      db.all(sql, params, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+  },
+  get: (sql, params) => {
+    return new Promise((resolve, reject) => {
+      db.get(sql, params, (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+  },
+  run: (sql, params) => {
+    return new Promise((resolve, reject) => {
+      db.run(sql, params, function (err) {
+        if (err) reject(err);
+        else resolve(this);
+      });
+    });
+  },
 };
