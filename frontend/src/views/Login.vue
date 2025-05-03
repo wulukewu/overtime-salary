@@ -38,7 +38,7 @@ import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 
 export default {
-  name: 'Login',
+  name: 'LoginPage',
   setup() {
     const store = useStore();
     const router = useRouter();
