@@ -16,11 +16,11 @@
             />
           </div>
           <div class="form-group">
-            <label for="endHour">Overtime End Hour (24h):</label>
+            <label for="end_hour">Overtime End Hour (24h):</label>
             <input
               type="number"
-              id="endHour"
-              v-model.number="endHour"
+              id="end_hour"
+              v-model.number="end_hour"
               required
               min="19"
               max="23"
@@ -81,7 +81,7 @@ export default {
   setup() {
     const store = useStore();
     const salary = ref(null);
-    const endHour = ref(null);
+    const end_hour = ref(null);
     const minutes = ref(null);
     const result = ref(null);
     const error = ref('');
@@ -104,18 +104,19 @@ export default {
             },
             body: JSON.stringify({
               salary: salary.value,
-              endHour: endHour.value,
+              end_hour: end_hour.value,
               minutes: minutes.value,
             }),
           }
         );
-        if (!response.ok) {
-          throw new Error('Failed to calculate overtime');
-        }
         const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to calculate overtime');
+        }
         result.value = data.result;
       } catch (err) {
         error.value = err.message;
+        result.value = null;
       } finally {
         loading.value = false;
       }
@@ -132,7 +133,7 @@ export default {
           },
           body: JSON.stringify({
             salary: salary.value,
-            end_hour: endHour.value,
+            end_hour: end_hour.value,
             minutes: minutes.value,
             calculated_pay: result.value,
           }),
@@ -143,7 +144,7 @@ export default {
         await fetchRecords();
         result.value = null;
         salary.value = null;
-        endHour.value = null;
+        end_hour.value = null;
         minutes.value = null;
       } catch (err) {
         error.value = err.message;
@@ -188,7 +189,7 @@ export default {
 
     return {
       salary,
-      endHour,
+      end_hour,
       minutes,
       result,
       error,

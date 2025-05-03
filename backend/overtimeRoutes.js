@@ -72,13 +72,22 @@ router.post('/', authenticate, (req, res) => {
 
 // Calculate overtime pay without saving
 router.post('/calculate', authenticate, (req, res) => {
-  const { salary, endHour, minutes } = req.body;
+  const { salary, end_hour, minutes } = req.body;
 
-  if (!salary || !endHour || !minutes) {
+  if (!salary || !end_hour || !minutes) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const result = calculateOvertimePay(salary, endHour, minutes);
+  // Convert to numbers to ensure proper type
+  const numSalary = Number(salary);
+  const numEndHour = Number(end_hour);
+  const numMinutes = Number(minutes);
+
+  if (isNaN(numSalary) || isNaN(numEndHour) || isNaN(numMinutes)) {
+    return res.status(400).json({ error: 'Invalid number format' });
+  }
+
+  const result = calculateOvertimePay(numSalary, numEndHour, numMinutes);
   res.json({ result });
 });
 

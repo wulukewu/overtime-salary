@@ -157,49 +157,56 @@ router.post('/login', async (req, res) => {
 });
 
 // Change password
-router.post('/change-password', authenticate, (req, res) => {
+router.post('/change-password', authenticate, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  db.get(
-    'SELECT password FROM users WHERE id = ?',
-    [req.userId],
-    (err, user) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-
-      bcrypt.compare(currentPassword, user.password, (err, isMatch) => {
-        if (err || !isMatch) {
-          return res
-            .status(401)
-            .json({ error: 'Current password is incorrect' });
+  try {
+    // Get user's current password
+    const user = await new Promise((resolve, reject) => {
+      db.get(
+        'SELECT password FROM users WHERE id = ?',
+        [req.userId],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
         }
+      );
+    });
 
-        bcrypt.hash(newPassword, SALT_ROUNDS, (err, hashedPassword) => {
-          if (err) {
-            return res.status(500).json({ error: 'Error hashing password' });
-          }
-
-          db.run(
-            'UPDATE users SET password = ?, force_password_change = 0 WHERE id = ?',
-            [hashedPassword, req.userId],
-            (err) => {
-              if (err) {
-                return res
-                  .status(500)
-                  .json({ error: 'Error updating password' });
-              }
-              res.json({ message: 'Password updated successfully' });
-            }
-          );
-        });
-      });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  );
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // Update password
+    await new Promise((resolve, reject) => {
+      db.run(
+        'UPDATE users SET password = ? WHERE id = ?',
+        [hashedPassword, req.userId],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Password change error:', error);
+    res.status(500).json({ error: 'Error updating password' });
+  }
 });
 
 // Admin: Get all users

@@ -146,15 +146,16 @@ export default {
           }
         );
 
+        const data = await response.json();
         if (response.ok) {
           passwordSuccess.value = true;
           currentPassword.value = '';
           newPassword.value = '';
         } else {
-          const data = await response.json();
           passwordError.value = data.error || 'Error changing password';
         }
       } catch (err) {
+        console.error('Password change error:', err);
         passwordError.value = 'Error changing password';
       } finally {
         changingPassword.value = false;
