@@ -86,9 +86,12 @@
                 @end="onDragEnd"
                 item-key="id"
                 class="records-container"
+                :animation="150"
+                ghost-class="ghost-card"
+                :data-group-id="group.id"
               >
                 <template #item="{ element: record }">
-                  <div class="record-card">
+                  <div class="record-card" :data-id="record.id">
                     <div class="record-header">
                       <div class="record-date">
                         {{ formatDate(record.date) }}
@@ -154,9 +157,12 @@
                 @end="onDragEnd"
                 item-key="id"
                 class="records-container"
+                :animation="150"
+                ghost-class="ghost-card"
+                :data-group-id="null"
               >
                 <template #item="{ element: record }">
-                  <div class="record-card">
+                  <div class="record-card" :data-id="record.id">
                     <div class="record-header">
                       <div class="record-date">
                         {{ formatDate(record.date) }}
@@ -697,34 +703,68 @@ export default {
     };
 
     const onDragEnd = async (evt) => {
-      const record = evt.item._underlying_vm_;
-      const newGroupId = evt.to.dataset.groupId || null;
+      console.log('Drag ended:', evt);
 
-      if (record.group_id !== newGroupId) {
-        try {
-          const response = await fetch(
-            `http://localhost:3000/api/overtime/${record.id}`,
-            {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${store.state.token}`,
-              },
-              body: JSON.stringify({
-                ...record,
-                group_id: newGroupId,
-              }),
-            }
-          );
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to update record group');
-          }
-          await fetchRecords();
-        } catch (err) {
-          console.error('Error updating record group:', err);
-          error.value = err.message;
+      // Get the record ID from the dragged item
+      const recordId = parseInt(evt.item.getAttribute('data-id'));
+      if (!recordId) {
+        console.error('No record ID found on dragged item');
+        return;
+      }
+
+      // Get the source and target group IDs
+      const fromGroupId = evt.from.getAttribute('data-group-id');
+      const toGroupId = evt.to.getAttribute('data-group-id');
+
+      console.log('Moving record:', {
+        recordId,
+        fromGroupId,
+        toGroupId,
+        fromElement: evt.from,
+        toElement: evt.to,
+      });
+
+      // If the group hasn't changed, do nothing
+      if (fromGroupId === toGroupId) {
+        console.log('No group change, skipping update');
+        return;
+      }
+
+      try {
+        // Find the record in our local state
+        const record = records.value.find((r) => r.id === recordId);
+        if (!record) {
+          throw new Error('Record not found');
         }
+
+        // Update the record's group_id in the database
+        const response = await fetch(
+          `http://localhost:3000/api/overtime/${recordId}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${store.state.token}`,
+            },
+            body: JSON.stringify({
+              ...record,
+              group_id: toGroupId === 'null' ? null : parseInt(toGroupId),
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update record group');
+        }
+
+        console.log('Record group updated successfully');
+        // Refresh the records to reflect the change
+        await fetchRecords();
+      } catch (error) {
+        console.error('Error updating record group:', error);
+        // Revert the drag operation by refreshing the records
+        await fetchRecords();
       }
     };
 
@@ -1060,5 +1100,11 @@ select {
   border-radius: 4px;
   font-size: 1rem;
   width: 100%;
+}
+
+.ghost-card {
+  opacity: 0.5;
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
 }
 </style>
