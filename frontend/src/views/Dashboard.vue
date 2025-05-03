@@ -66,15 +66,18 @@
           >
             <template #item="{ element: group }">
               <div class="group-item">
-                <div class="group-header">
+                <div class="group-header" @click="toggleGroup(group)">
                   <div class="group-name">
+                    <span class="collapse-icon">{{
+                      group.collapsed ? '▶' : '▼'
+                    }}</span>
                     {{ group.name }}
                     <span class="group-total">
                       (Total: {{ getGroupTotal(group.id) }})
                     </span>
                   </div>
                   <div class="group-actions">
-                    <button @click="editGroup(group)" class="edit-button">
+                    <button @click.stop="editGroup(group)" class="edit-button">
                       Edit
                     </button>
                     <button
@@ -404,42 +407,31 @@ export default {
       );
     };
 
-    const toggleGroup = async (groupId) => {
-      if (groupId === 'ungrouped') {
-        const index = collapsedGroups.value.indexOf(groupId);
-        if (index === -1) {
-          collapsedGroups.value.push(groupId);
-        } else {
-          collapsedGroups.value.splice(index, 1);
-        }
-        return;
-      }
-
-      const group = groups.value.find((g) => g.id === groupId);
-      if (group) {
-        try {
-          const response = await fetch(
-            `http://localhost:3000/api/groups/${groupId}`,
-            {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${store.state.token}`,
-              },
-              body: JSON.stringify({
-                collapsed: !group.collapsed,
-              }),
-            }
-          );
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to update group state');
+    const toggleGroup = async (group) => {
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/groups/${group.id}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${store.state.token}`,
+            },
+            body: JSON.stringify({
+              collapsed: !group.collapsed,
+            }),
           }
-          await fetchGroups();
-        } catch (err) {
-          console.error('Error toggling group:', err);
-          error.value = err.message;
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to update group state');
         }
+
+        // Update local state
+        group.collapsed = !group.collapsed;
+      } catch (err) {
+        console.error('Error toggling group:', err);
+        error.value = err.message;
       }
     };
 
@@ -992,10 +984,15 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  cursor: move;
   padding: 0.5rem;
   background: #f8f9fa;
   border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.group-header:hover {
+  background: #e9ecef;
 }
 
 .group-header h3 {
@@ -1185,5 +1182,12 @@ select {
   opacity: 0.5;
   background: #f8f9fa;
   border: 2px dashed #dee2e6;
+}
+
+.collapse-icon {
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 12px;
+  transition: transform 0.2s;
 }
 </style>

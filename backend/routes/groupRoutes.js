@@ -49,14 +49,10 @@ router.post('/', authenticate, async (req, res) => {
   }
 });
 
-// Update group name
+// Update group
 router.put('/:id', authenticate, async (req, res) => {
   const { id } = req.params;
-  const { name } = req.body;
-
-  if (!name) {
-    return res.status(400).json({ error: 'Group name is required' });
-  }
+  const { name, collapsed } = req.body;
 
   try {
     // Verify group belongs to user
@@ -69,7 +65,26 @@ router.put('/:id', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Group not found' });
     }
 
-    await run('UPDATE groups SET name = ? WHERE id = ?', [name, id]);
+    const updates = [];
+    const values = [];
+
+    if (name !== undefined) {
+      updates.push('name = ?');
+      values.push(name);
+    }
+
+    if (collapsed !== undefined) {
+      updates.push('collapsed = ?');
+      values.push(collapsed ? 1 : 0);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No valid updates provided' });
+    }
+
+    values.push(id);
+    await run(`UPDATE groups SET ${updates.join(', ')} WHERE id = ?`, values);
+
     res.json({ message: 'Group updated successfully' });
   } catch (error) {
     console.error('Error updating group:', error);
