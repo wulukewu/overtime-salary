@@ -5,6 +5,9 @@ export default createStore({
     user: null,
     token: localStorage.getItem('token') || null,
     isAdmin: localStorage.getItem('isAdmin') === 'true' || false,
+    monthly_salary: localStorage.getItem('monthly_salary')
+      ? Number(localStorage.getItem('monthly_salary'))
+      : 0,
   },
   mutations: {
     setUser(state, user) {
@@ -12,7 +15,11 @@ export default createStore({
     },
     setToken(state, token) {
       state.token = token;
-      localStorage.setItem('token', token);
+      if (token) {
+        localStorage.setItem('token', token);
+      } else {
+        localStorage.removeItem('token');
+      }
     },
     setAdmin(state, isAdmin) {
       state.isAdmin = isAdmin;
@@ -24,6 +31,10 @@ export default createStore({
       state.isAdmin = false;
       localStorage.removeItem('token');
       localStorage.removeItem('isAdmin');
+    },
+    setMonthlySalary(state, salary) {
+      state.monthly_salary = salary;
+      localStorage.setItem('monthly_salary', salary);
     },
   },
   actions: {
@@ -88,6 +99,7 @@ export default createStore({
     },
     logout({ commit }) {
       commit('logout');
+      commit('setMonthlySalary', 0);
     },
   },
   getters: {

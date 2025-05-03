@@ -6,6 +6,7 @@
         <router-link to="/dashboard">Dashboard</router-link>
         <router-link to="/profile">Profile</router-link>
         <router-link v-if="isAdmin" to="/admin">Admin</router-link>
+        <router-link to="/settings">Settings</router-link>
         <button @click="handleLogout" class="logout-btn">Logout</button>
       </div>
     </nav>

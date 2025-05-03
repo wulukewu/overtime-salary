@@ -294,4 +294,48 @@ router.get('/profile', authenticate, (req, res) => {
   );
 });
 
+// Get user settings
+router.get('/settings', authenticate, (req, res) => {
+  db.get(
+    'SELECT monthly_salary FROM users WHERE id = ?',
+    [req.userId],
+    (err, row) => {
+      if (err) {
+        console.error('Error fetching user settings:', err);
+        return res.status(500).json({ error: 'Error fetching user settings' });
+      }
+      if (!row) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      res.json({ monthly_salary: row.monthly_salary || 0 });
+    }
+  );
+});
+
+// Update user settings
+router.put('/settings', authenticate, (req, res) => {
+  const { monthly_salary } = req.body;
+
+  if (monthly_salary === undefined || monthly_salary === null) {
+    return res.status(400).json({ error: 'Monthly salary is required' });
+  }
+
+  const salary = Number(monthly_salary);
+  if (isNaN(salary) || salary < 0) {
+    return res.status(400).json({ error: 'Invalid monthly salary' });
+  }
+
+  db.run(
+    'UPDATE users SET monthly_salary = ? WHERE id = ?',
+    [salary, req.userId],
+    (err) => {
+      if (err) {
+        console.error('Error updating user settings:', err);
+        return res.status(500).json({ error: 'Error updating user settings' });
+      }
+      res.json({ monthly_salary: salary });
+    }
+  );
+});
+
 module.exports = router;

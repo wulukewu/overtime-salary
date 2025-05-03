@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import Settings from '../views/Settings.vue';
 
 const routes = [
   {
@@ -33,6 +34,12 @@ const routes = [
     path: '/profile',
     name: 'UserProfile',
     component: () => import('../views/Profile.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: Settings,
     meta: { requiresAuth: true },
   },
 ];

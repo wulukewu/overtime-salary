@@ -6,14 +6,7 @@
         <h2>Calculate Overtime Pay</h2>
         <form @submit.prevent="calculateOvertime" class="calculator-form">
           <div class="form-group">
-            <label for="salary">Monthly Salary:</label>
-            <input
-              type="number"
-              id="salary"
-              v-model.number="salary"
-              required
-              min="0"
-            />
+            <label>Monthly Salary: {{ store.state.monthly_salary }}</label>
           </div>
           <div class="form-group">
             <label for="end_hour">Overtime End Hour (24h):</label>
@@ -80,7 +73,6 @@ export default {
   name: 'OvertimeDashboard',
   setup() {
     const store = useStore();
-    const salary = ref(0);
     const end_hour = ref(19);
     const minutes = ref(0);
     const result = ref(null);
@@ -95,12 +87,8 @@ export default {
       loading.value = true;
       try {
         // Validate inputs
-        if (
-          salary.value === null ||
-          salary.value === undefined ||
-          salary.value === ''
-        ) {
-          throw new Error('Please enter a monthly salary');
+        if (!store.state.monthly_salary) {
+          throw new Error('Please set your monthly salary in Settings first');
         }
         if (
           end_hour.value === null ||
@@ -118,16 +106,11 @@ export default {
         }
 
         const requestBody = {
-          salary: Number(salary.value),
+          salary: store.state.monthly_salary,
           end_hour: Number(end_hour.value),
           minutes: Number(minutes.value),
         };
 
-        console.log('Form values:', {
-          salary: salary.value,
-          end_hour: end_hour.value,
-          minutes: minutes.value,
-        });
         console.log('Request body:', requestBody);
         console.log('Token:', store.state.token);
 
@@ -163,7 +146,7 @@ export default {
     const saveRecord = async () => {
       saving.value = true;
       try {
-        const currentDate = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+        const currentDate = new Date().toISOString().split('T')[0];
         const response = await fetch('http://localhost:3000/api/overtime/', {
           method: 'POST',
           headers: {
@@ -172,7 +155,7 @@ export default {
           },
           body: JSON.stringify({
             date: currentDate,
-            salary: salary.value,
+            salary: store.state.monthly_salary,
             end_hour: end_hour.value,
             minutes: minutes.value,
             calculated_pay: result.value,
@@ -184,7 +167,6 @@ export default {
         }
         await fetchRecords();
         result.value = null;
-        salary.value = 0;
         end_hour.value = 19;
         minutes.value = 0;
       } catch (err) {
@@ -199,7 +181,7 @@ export default {
       loadingRecords.value = true;
       try {
         const token = store.state.token;
-        console.log('Current token:', token); // Debug log
+        console.log('Current token:', token);
         if (!token) {
           throw new Error('No authentication token found');
         }
@@ -208,15 +190,15 @@ export default {
             Authorization: `Bearer ${token}`,
           },
         });
-        console.log('Response status:', response.status); // Debug log
+        console.log('Response status:', response.status);
         if (!response.ok) {
           const errorData = await response.json();
-          console.log('Error response:', errorData); // Debug log
+          console.log('Error response:', errorData);
           throw new Error(errorData.error || 'Failed to fetch records');
         }
         records.value = await response.json();
       } catch (err) {
-        console.error('Fetch records error:', err); // Debug log
+        console.error('Fetch records error:', err);
         error.value = err.message;
       } finally {
         loadingRecords.value = false;
@@ -230,7 +212,7 @@ export default {
     onMounted(fetchRecords);
 
     return {
-      salary,
+      store,
       end_hour,
       minutes,
       result,
