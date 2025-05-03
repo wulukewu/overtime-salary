@@ -44,28 +44,145 @@
       </div>
 
       <div class="records-section">
-        <h2>Your Overtime Records</h2>
+        <div class="groups-header">
+          <h2>Your Overtime Records</h2>
+          <button @click="showNewGroupModal = true" class="new-group-button">
+            New Group
+          </button>
+        </div>
         <div v-if="loadingRecords" class="loading">Loading records...</div>
         <div v-else-if="records.length === 0" class="no-records">
           No records found
         </div>
-        <div v-else class="records-list">
-          <div v-for="record in records" :key="record.id" class="record-item">
-            <div class="record-date">{{ formatDate(record.date) }}</div>
-            <div class="record-details">
-              <div>Salary: {{ record.salary }}</div>
-              <div>End Hour: {{ record.end_hour }}</div>
-              <div>Minutes: {{ record.minutes }}</div>
-              <div class="record-pay">Pay: {{ record.calculated_pay }}</div>
+        <div v-else class="groups-list">
+          <div v-for="group in groups" :key="group.id" class="group-item">
+            <div class="group-header" @click="toggleGroup(group.id)">
+              <div class="group-name">
+                {{ group.name }}
+                <span class="group-total">
+                  (Total: {{ getGroupTotal(group.id) }})
+                </span>
+              </div>
+              <div class="group-actions">
+                <button @click.stop="editGroup(group)" class="edit-button">
+                  Edit
+                </button>
+                <button
+                  @click.stop="deleteGroup(group.id)"
+                  class="delete-button"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
-            <button
-              class="delete-button"
-              @click="deleteRecord(record.id)"
-              :disabled="deletingId === record.id"
+            <div
+              v-if="!collapsedGroups.includes(group.id)"
+              class="group-records"
             >
-              {{ deletingId === record.id ? 'Deleting...' : 'Delete' }}
-            </button>
+              <div
+                v-for="record in getGroupRecords(group.id)"
+                :key="record.id"
+                class="record-item"
+              >
+                <div class="record-date">{{ formatDate(record.date) }}</div>
+                <div class="record-details">
+                  <div>Salary: {{ record.salary }}</div>
+                  <div>End Hour: {{ record.end_hour }}</div>
+                  <div>Minutes: {{ record.minutes }}</div>
+                  <div class="record-pay">Pay: {{ record.calculated_pay }}</div>
+                </div>
+                <button
+                  class="delete-button"
+                  @click="deleteRecord(record.id)"
+                  :disabled="deletingId === record.id"
+                >
+                  {{ deletingId === record.id ? 'Deleting...' : 'Delete' }}
+                </button>
+              </div>
+            </div>
           </div>
+          <!-- Ungrouped records -->
+          <div class="group-item">
+            <div class="group-header" @click="toggleGroup('ungrouped')">
+              <div class="group-name">
+                Ungrouped
+                <span class="group-total">
+                  (Total: {{ getGroupTotal('ungrouped') }})
+                </span>
+              </div>
+            </div>
+            <div
+              v-if="!collapsedGroups.includes('ungrouped')"
+              class="group-records"
+            >
+              <div
+                v-for="record in getGroupRecords('ungrouped')"
+                :key="record.id"
+                class="record-item"
+              >
+                <div class="record-date">{{ formatDate(record.date) }}</div>
+                <div class="record-details">
+                  <div>Salary: {{ record.salary }}</div>
+                  <div>End Hour: {{ record.end_hour }}</div>
+                  <div>Minutes: {{ record.minutes }}</div>
+                  <div class="record-pay">Pay: {{ record.calculated_pay }}</div>
+                </div>
+                <button
+                  class="delete-button"
+                  @click="deleteRecord(record.id)"
+                  :disabled="deletingId === record.id"
+                >
+                  {{ deletingId === record.id ? 'Deleting...' : 'Delete' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Group Modal -->
+      <div v-if="showNewGroupModal" class="modal">
+        <div class="modal-content">
+          <h3>Create New Group</h3>
+          <form @submit.prevent="createGroup">
+            <div class="form-group">
+              <label for="groupName">Group Name:</label>
+              <input
+                type="text"
+                id="groupName"
+                v-model="newGroupName"
+                required
+              />
+            </div>
+            <button type="submit" :disabled="creatingGroup">
+              {{ creatingGroup ? 'Creating...' : 'Create' }}
+            </button>
+            <button type="button" @click="showNewGroupModal = false">
+              Cancel
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Edit Group Modal -->
+      <div v-if="editingGroup" class="modal">
+        <div class="modal-content">
+          <h3>Edit Group</h3>
+          <form @submit.prevent="updateGroup">
+            <div class="form-group">
+              <label for="editGroupName">Group Name:</label>
+              <input
+                type="text"
+                id="editGroupName"
+                v-model="editingGroup.name"
+                required
+              />
+            </div>
+            <button type="submit" :disabled="updatingGroup">
+              {{ updatingGroup ? 'Updating...' : 'Update' }}
+            </button>
+            <button type="button" @click="editingGroup = null">Cancel</button>
+          </form>
         </div>
       </div>
     </div>
@@ -73,7 +190,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useStore } from 'vuex';
 
 export default {
@@ -87,8 +204,138 @@ export default {
     const loading = ref(false);
     const saving = ref(false);
     const records = ref([]);
+    const groups = ref([]);
     const loadingRecords = ref(true);
     const deletingId = ref(null);
+    const showNewGroupModal = ref(false);
+    const newGroupName = ref('');
+    const creatingGroup = ref(false);
+    const editingGroup = ref(null);
+    const updatingGroup = ref(false);
+    const collapsedGroups = ref([]);
+
+    const getGroupRecords = (groupId) => {
+      if (groupId === 'ungrouped') {
+        return records.value.filter((record) => !record.group_id);
+      }
+      return records.value.filter((record) => record.group_id === groupId);
+    };
+
+    const getGroupTotal = (groupId) => {
+      const groupRecords = getGroupRecords(groupId);
+      return groupRecords.reduce(
+        (sum, record) => sum + record.calculated_pay,
+        0
+      );
+    };
+
+    const toggleGroup = (groupId) => {
+      const index = collapsedGroups.value.indexOf(groupId);
+      if (index === -1) {
+        collapsedGroups.value.push(groupId);
+      } else {
+        collapsedGroups.value.splice(index, 1);
+      }
+    };
+
+    const createGroup = async () => {
+      creatingGroup.value = true;
+      try {
+        const response = await fetch('http://localhost:3000/api/groups', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${store.state.token}`,
+          },
+          body: JSON.stringify({ name: newGroupName.value }),
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create group');
+        }
+        await fetchGroups();
+        showNewGroupModal.value = false;
+        newGroupName.value = '';
+      } catch (err) {
+        console.error('Error creating group:', err);
+        error.value = err.message;
+      } finally {
+        creatingGroup.value = false;
+      }
+    };
+
+    const editGroup = (group) => {
+      editingGroup.value = { ...group };
+    };
+
+    const updateGroup = async () => {
+      updatingGroup.value = true;
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/groups/${editingGroup.value.id}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${store.state.token}`,
+            },
+            body: JSON.stringify({ name: editingGroup.value.name }),
+          }
+        );
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update group');
+        }
+        await fetchGroups();
+        editingGroup.value = null;
+      } catch (err) {
+        console.error('Error updating group:', err);
+        error.value = err.message;
+      } finally {
+        updatingGroup.value = false;
+      }
+    };
+
+    const deleteGroup = async (groupId) => {
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/groups/${groupId}`,
+          {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${store.state.token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to delete group');
+        }
+        await fetchGroups();
+        await fetchRecords();
+      } catch (err) {
+        console.error('Error deleting group:', err);
+        error.value = err.message;
+      }
+    };
+
+    const fetchGroups = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/groups', {
+          headers: {
+            Authorization: `Bearer ${store.state.token}`,
+          },
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch groups');
+        }
+        groups.value = await response.json();
+      } catch (err) {
+        console.error('Error fetching groups:', err);
+        error.value = err.message;
+      }
+    };
 
     const calculateOvertime = async () => {
       error.value = '';
@@ -167,6 +414,7 @@ export default {
             end_hour: end_hour.value,
             minutes: minutes.value,
             calculated_pay: result.value,
+            group_id: groups.value[0]?.id, // Add to the first group by default
           }),
         });
         if (!response.ok) {
@@ -242,7 +490,9 @@ export default {
       return new Date(dateString).toLocaleDateString();
     };
 
-    onMounted(fetchRecords);
+    onMounted(async () => {
+      await Promise.all([fetchGroups(), fetchRecords()]);
+    });
 
     return {
       store,
@@ -253,12 +503,26 @@ export default {
       loading,
       saving,
       records,
+      groups,
       loadingRecords,
       deletingId,
+      showNewGroupModal,
+      newGroupName,
+      creatingGroup,
+      editingGroup,
+      updatingGroup,
+      collapsedGroups,
       calculateOvertime,
       saveRecord,
       deleteRecord,
       formatDate,
+      getGroupRecords,
+      getGroupTotal,
+      toggleGroup,
+      createGroup,
+      editGroup,
+      updateGroup,
+      deleteGroup,
     };
   },
 };
@@ -332,50 +596,101 @@ button:disabled {
   margin-top: 1rem;
 }
 
-.records-list {
+.records-section {
+  position: relative;
+}
+
+.groups-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.new-group-button {
+  padding: 0.5rem 1rem;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.groups-list {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.record-item {
+.group-item {
+  margin-bottom: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.group-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid #eee;
+  background-color: #f8f9fa;
+  cursor: pointer;
 }
 
-.record-date {
+.group-name {
   font-weight: bold;
-  margin-bottom: 0.5rem;
 }
 
-.record-details {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+.group-total {
+  color: #4caf50;
+  margin-left: 0.5rem;
+}
+
+.group-actions {
+  display: flex;
   gap: 0.5rem;
 }
 
-.record-pay {
-  grid-column: span 2;
-  font-weight: bold;
-  color: #4caf50;
+.group-records {
+  padding: 1rem;
 }
 
-.delete-button {
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  min-width: 300px;
+}
+
+.modal-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-content button {
+  margin-top: 1rem;
+}
+
+.edit-button {
   padding: 0.5rem 1rem;
-  background-color: #ff4444;
+  background-color: #2196f3;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.delete-button:disabled {
-  background-color: #ff9999;
-  cursor: not-allowed;
 }
 
 .loading,

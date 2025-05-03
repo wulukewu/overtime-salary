@@ -24,115 +24,65 @@ const authenticate = (req, res, next) => {
 };
 
 // Get all overtime records for the authenticated user
-router.get('/', authenticate, (req, res) => {
-  const userId = req.userId;
-
-  db.all(
-    'SELECT * FROM overtime_records WHERE user_id = ? ORDER BY date DESC',
-    [userId],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      res.json(rows);
-    }
-  );
+router.get('/', authenticate, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const records = await db.all(
+      `SELECT r.*, g.name as group_name 
+       FROM overtime_records r 
+       LEFT JOIN groups g ON r.group_id = g.id 
+       WHERE r.user_id = ? 
+       ORDER BY r.date DESC`,
+      [userId]
+    );
+    res.json(records);
+  } catch (error) {
+    console.error('Error fetching records:', error);
+    res.status(500).json({ error: 'Failed to fetch records' });
+  }
 });
 
 // Create a new overtime record
-router.post('/', authenticate, (req, res) => {
-  const userId = req.userId;
-  const { date, salary, end_hour, minutes, calculated_pay } = req.body;
+router.post('/', authenticate, async (req, res) => {
+  try {
+    const { date, salary, end_hour, minutes, calculated_pay, group_id } =
+      req.body;
+    const userId = req.userId;
 
-  console.log('Received save request:', {
-    userId,
-    date,
-    salary,
-    end_hour,
-    minutes,
-    calculated_pay,
-  });
-
-  // Check for missing fields
-  const missingFields = [];
-  if (date === undefined || date === null || date === '')
-    missingFields.push('date');
-  if (salary === undefined || salary === null) missingFields.push('salary');
-  if (end_hour === undefined || end_hour === null)
-    missingFields.push('end_hour');
-  if (minutes === undefined || minutes === null) missingFields.push('minutes');
-  if (calculated_pay === undefined || calculated_pay === null)
-    missingFields.push('calculated_pay');
-
-  if (missingFields.length > 0) {
-    console.log('Missing fields:', missingFields);
-    return res.status(400).json({
-      error: 'Missing required fields',
-      missingFields,
-    });
-  }
-
-  // Validate data types
-  if (isNaN(Number(salary))) {
-    console.log('Invalid salary:', salary);
-    return res.status(400).json({ error: 'Invalid salary format' });
-  }
-  if (isNaN(Number(end_hour))) {
-    console.log('Invalid end_hour:', end_hour);
-    return res.status(400).json({ error: 'Invalid end_hour format' });
-  }
-  if (isNaN(Number(minutes))) {
-    console.log('Invalid minutes:', minutes);
-    return res.status(400).json({ error: 'Invalid minutes format' });
-  }
-  if (isNaN(Number(calculated_pay))) {
-    console.log('Invalid calculated_pay:', calculated_pay);
-    return res.status(400).json({ error: 'Invalid calculated_pay format' });
-  }
-
-  // Convert to numbers
-  const numSalary = Number(salary);
-  const numEndHour = Number(end_hour);
-  const numMinutes = Number(minutes);
-  const numCalculatedPay = Number(calculated_pay);
-
-  console.log('Converted values:', {
-    salary: numSalary,
-    end_hour: numEndHour,
-    minutes: numMinutes,
-    calculated_pay: numCalculatedPay,
-  });
-
-  db.run(
-    'INSERT INTO overtime_records (user_id, date, salary, end_hour, minutes, calculated_pay) VALUES (?, ?, ?, ?, ?, ?)',
-    [userId, date, numSalary, numEndHour, numMinutes, numCalculatedPay],
-    function (err) {
-      if (err) {
-        console.error('Database error:', err);
-        return res
-          .status(500)
-          .json({ error: 'Failed to save record', details: err.message });
-      }
-      console.log('Record saved successfully:', {
-        id: this.lastID,
-        user_id: userId,
-        date,
-        salary: numSalary,
-        end_hour: numEndHour,
-        minutes: numMinutes,
-        calculated_pay: numCalculatedPay,
-      });
-      res.status(201).json({
-        id: this.lastID,
-        user_id: userId,
-        date,
-        salary: numSalary,
-        end_hour: numEndHour,
-        minutes: numMinutes,
-        calculated_pay: numCalculatedPay,
-      });
+    // Validate required fields
+    if (!date || !salary || !end_hour || !minutes || !calculated_pay) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
-  );
+
+    // If group_id is provided, verify it belongs to the user
+    if (group_id) {
+      const group = await db.get(
+        'SELECT * FROM groups WHERE id = ? AND user_id = ?',
+        [group_id, userId]
+      );
+      if (!group) {
+        return res.status(400).json({ error: 'Invalid group' });
+      }
+    }
+
+    const result = await db.run(
+      'INSERT INTO overtime_records (user_id, group_id, date, salary, end_hour, minutes, calculated_pay) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [userId, group_id, date, salary, end_hour, minutes, calculated_pay]
+    );
+
+    res.status(201).json({
+      id: result.lastID,
+      date,
+      salary,
+      end_hour,
+      minutes,
+      calculated_pay,
+      group_id,
+    });
+  } catch (error) {
+    console.error('Error saving record:', error);
+    res.status(500).json({ error: 'Failed to save record' });
+  }
 });
 
 // Calculate overtime pay

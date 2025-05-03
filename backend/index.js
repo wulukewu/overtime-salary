@@ -4,7 +4,8 @@ const bodyParser = require('body-parser');
 const calculateOvertimePay = require('./overtimeCalculator');
 const { initDatabase } = require('./database');
 const userRoutes = require('./routes/userRoutes');
-const overtimeRoutes = require('./overtimeRoutes');
+const overtimeRoutes = require('./routes/overtimeRoutes');
+const groupRoutes = require('./routes/groupRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +19,7 @@ app.use(bodyParser.json());
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/overtime', overtimeRoutes);
+app.use('/api/groups', groupRoutes);
 
 // Simple overtime calculation endpoint (for testing)
 app.post('/api/calculate', (req, res) => {

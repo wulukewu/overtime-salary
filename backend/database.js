@@ -15,13 +15,21 @@ const initDatabase = async () => {
       db.run(`
         CREATE TABLE IF NOT EXISTS users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          email TEXT UNIQUE NOT NULL,
+          username TEXT UNIQUE NOT NULL,
           password TEXT NOT NULL,
-          monthly_salary REAL DEFAULT 0,
-          is_admin INTEGER DEFAULT 0,
-          force_password_change INTEGER DEFAULT 0,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          monthly_salary REAL DEFAULT 0
+        )
+      `);
+
+      // Create groups table
+      db.run(`
+        CREATE TABLE IF NOT EXISTS groups (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          sort_order INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id)
         )
       `);
 
@@ -30,13 +38,15 @@ const initDatabase = async () => {
         CREATE TABLE IF NOT EXISTS overtime_records (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           user_id INTEGER NOT NULL,
-          date DATE NOT NULL,
+          group_id INTEGER,
+          date TEXT NOT NULL,
           salary REAL NOT NULL,
           end_hour INTEGER NOT NULL,
           minutes INTEGER NOT NULL,
-          calculated_pay REAL NOT NULL,
+          calculated_pay INTEGER NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (user_id) REFERENCES users(id)
+          FOREIGN KEY (user_id) REFERENCES users(id),
+          FOREIGN KEY (group_id) REFERENCES groups(id)
         )
       `);
 
