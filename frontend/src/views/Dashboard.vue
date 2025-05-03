@@ -1,3 +1,4 @@
+/* eslint-disable vue/no-unused-vars */
 <template>
   <div class="dashboard">
     <h1>Dashboard</h1>
@@ -55,124 +56,109 @@
           No records found
         </div>
         <div v-else class="groups-container">
-          <DragDropContext @drag-end="onGroupDragEnd">
-            <Droppable droppableId="groups" direction="vertical">
-              <template #default="{ droppableProps, innerRef, placeholder }">
-                <div class="groups-list" v-bind="droppableProps" ref="innerRef">
-                  <Draggable
-                    v-for="group in groups"
-                    :key="group.id"
-                    :draggableId="group.id.toString()"
-                  >
-                    <template
-                      #default="{ draggableProps, dragHandleProps, innerRef }"
+          <draggable
+            v-model="groups"
+            group="groups"
+            @end="onGroupDragEnd"
+            item-key="id"
+            :animation="150"
+            ghost-class="ghost-card"
+          >
+            <template #item="{ element: group }">
+              <div class="group-item">
+                <div class="group-header">
+                  <div class="group-name">
+                    {{ group.name }}
+                    <span class="group-total">
+                      (Total: {{ getGroupTotal(group.id) }})
+                    </span>
+                  </div>
+                  <div class="group-actions">
+                    <button @click="editGroup(group)" class="edit-button">
+                      Edit
+                    </button>
+                    <button
+                      @click.stop="deleteGroup(group.id)"
+                      class="delete-button group-delete-button"
                     >
-                      <div
-                        class="group-item"
-                        v-bind="draggableProps"
-                        ref="innerRef"
-                      >
-                        <div class="group-header" v-bind="dragHandleProps">
-                          <div class="group-name">
-                            {{ group.name }}
-                            <span class="group-total">
-                              (Total: {{ getGroupTotal(group.id) }})
-                            </span>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+                <div
+                  v-if="!group.collapsed"
+                  class="group-records"
+                  :data-group-id="group.id"
+                >
+                  <draggable
+                    :list="getGroupRecords(group.id)"
+                    group="records"
+                    @end="onDragEnd"
+                    item-key="id"
+                    class="records-container"
+                    :animation="150"
+                    ghost-class="ghost-card"
+                    :data-group-id="group.id"
+                  >
+                    <template #item="{ element: record }">
+                      <div class="record-card" :data-id="record.id">
+                        <div class="record-header">
+                          <div class="record-date">
+                            {{ formatDate(record.date) }}
                           </div>
-                          <div class="group-actions">
+                          <div class="record-actions">
                             <button
-                              @click="editGroup(group)"
+                              @click="editRecord(record)"
                               class="edit-button"
                             >
                               Edit
                             </button>
                             <button
-                              @click.stop="deleteGroup(group.id)"
-                              class="delete-button group-delete-button"
+                              class="delete-button record-delete-button"
+                              @click="deleteRecord(record.id)"
+                              :disabled="deletingId === record.id"
                             >
-                              Delete
+                              {{
+                                deletingId === record.id
+                                  ? 'Deleting...'
+                                  : 'Delete'
+                              }}
                             </button>
                           </div>
                         </div>
-                        <div
-                          v-if="!group.collapsed"
-                          class="group-records"
-                          :data-group-id="group.id"
-                        >
-                          <draggable
-                            :list="getGroupRecords(group.id)"
-                            group="records"
-                            @end="onDragEnd"
-                            item-key="id"
-                            class="records-container"
-                            :animation="150"
-                            ghost-class="ghost-card"
-                            :data-group-id="group.id"
-                          >
-                            <template #item="{ element: record }">
-                              <div class="record-card" :data-id="record.id">
-                                <div class="record-header">
-                                  <div class="record-date">
-                                    {{ formatDate(record.date) }}
-                                  </div>
-                                  <div class="record-actions">
-                                    <button
-                                      @click="editRecord(record)"
-                                      class="edit-button"
-                                    >
-                                      Edit
-                                    </button>
-                                    <button
-                                      class="delete-button record-delete-button"
-                                      @click="deleteRecord(record.id)"
-                                      :disabled="deletingId === record.id"
-                                    >
-                                      {{
-                                        deletingId === record.id
-                                          ? 'Deleting...'
-                                          : 'Delete'
-                                      }}
-                                    </button>
-                                  </div>
-                                </div>
-                                <div class="record-details">
-                                  <div class="detail-item">
-                                    <span class="detail-label">Salary:</span>
-                                    <span class="detail-value">{{
-                                      record.salary
-                                    }}</span>
-                                  </div>
-                                  <div class="detail-item">
-                                    <span class="detail-label">End Hour:</span>
-                                    <span class="detail-value">{{
-                                      record.end_hour
-                                    }}</span>
-                                  </div>
-                                  <div class="detail-item">
-                                    <span class="detail-label">Minutes:</span>
-                                    <span class="detail-value">{{
-                                      record.minutes
-                                    }}</span>
-                                  </div>
-                                  <div class="detail-item">
-                                    <span class="detail-label">Pay:</span>
-                                    <span class="detail-value pay-value">{{
-                                      record.calculated_pay
-                                    }}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </template>
-                          </draggable>
+                        <div class="record-details">
+                          <div class="detail-item">
+                            <span class="detail-label">Salary:</span>
+                            <span class="detail-value">{{
+                              record.salary
+                            }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label">End Hour:</span>
+                            <span class="detail-value">{{
+                              record.end_hour
+                            }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label">Minutes:</span>
+                            <span class="detail-value">{{
+                              record.minutes
+                            }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label">Pay:</span>
+                            <span class="detail-value pay-value">{{
+                              record.calculated_pay
+                            }}</span>
+                          </div>
                         </div>
                       </div>
                     </template>
-                  </Draggable>
-                  {{ placeholder }}
+                  </draggable>
                 </div>
-              </template>
-            </Droppable>
-          </DragDropContext>
+              </div>
+            </template>
+          </draggable>
           <!-- Ungrouped records -->
           <div class="group-item">
             <div class="group-header" @click="toggleGroup('ungrouped')">
@@ -365,20 +351,18 @@
     </div>
   </div>
 </template>
+/* eslint-enable vue/no-unused-vars */
 
 <script>
+/* eslint-disable vue/no-unused-vars */
 import { ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import draggable from 'vuedraggable';
-import { DragDropContext, Droppable, Draggable } from 'vue-draggable-next';
 
 export default {
-  name: 'Dashboard',
+  name: 'OvertimeDashboard',
   components: {
     draggable,
-    DragDropContext,
-    Droppable,
-    Draggable,
   },
   setup() {
     const store = useStore();
@@ -829,16 +813,15 @@ export default {
       }
     };
 
-    const onGroupDragEnd = async (result) => {
-      if (!result.destination) return;
+    const onGroupDragEnd = async (evt) => {
+      if (!evt.moved) return;
 
-      const { source, destination } = result;
-      const groupId = parseInt(result.draggableId);
-      const newSortOrder = destination.index + 1;
+      const { element: group, newIndex } = evt.moved;
+      const newSortOrder = newIndex + 1;
 
       try {
         const response = await fetch(
-          `http://localhost:3000/api/groups/${groupId}/sort`,
+          `http://localhost:3000/api/groups/${group.id}/sort`,
           {
             method: 'PUT',
             headers: {
@@ -849,17 +832,13 @@ export default {
           }
         );
 
-        if (response.ok) {
-          // Update local state
-          const updatedGroups = [...groups.value];
-          const [movedGroup] = updatedGroups.splice(source.index, 1);
-          updatedGroups.splice(destination.index, 0, movedGroup);
-          groups.value = updatedGroups;
-        } else {
+        if (!response.ok) {
           console.error('Failed to update group sort order');
+          await fetchGroups(); // Refresh groups to revert the change
         }
       } catch (error) {
         console.error('Error updating group sort order:', error);
+        await fetchGroups(); // Refresh groups to revert the change
       }
     };
 
