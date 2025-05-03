@@ -7,61 +7,59 @@ const authenticate = require('../auth');
 router.get('/', authenticate, async (req, res) => {
   try {
     const groups = await all(
-      'SELECT g.*, COUNT(r.id) as record_count ' +
-        'FROM groups g ' +
-        'LEFT JOIN overtime_records r ON g.id = r.group_id ' +
-        'WHERE g.user_id = ? ' +
-        'GROUP BY g.id ' +
-        'ORDER BY g.sort_order ASC',
+      'SELECT * FROM groups WHERE user_id = ? ORDER BY sort_order ASC',
       [req.userId]
     );
     res.json(groups);
   } catch (error) {
     console.error('Error fetching groups:', error);
-    res.status(500).json({ error: 'Failed to fetch groups' });
+    res.status(500).json({ error: 'Error fetching groups' });
   }
 });
 
 // Create a new group
 router.post('/', authenticate, async (req, res) => {
-  try {
-    const { name } = req.body;
-    if (!name) {
-      return res.status(400).json({ error: 'Group name is required' });
-    }
+  const { name } = req.body;
 
+  if (!name) {
+    return res.status(400).json({ error: 'Group name is required' });
+  }
+
+  try {
     // Get the highest sort_order
-    const maxOrder = await get(
-      'SELECT MAX(sort_order) as maxOrder FROM groups WHERE user_id = ?',
+    const lastGroup = await get(
+      'SELECT sort_order FROM groups WHERE user_id = ? ORDER BY sort_order DESC LIMIT 1',
       [req.userId]
     );
-    const newOrder = (maxOrder?.maxOrder || 0) + 1;
+    const nextSortOrder = (lastGroup?.sort_order || 0) + 1;
 
     const result = await run(
-      'INSERT INTO groups (user_id, name, sort_order, collapsed) VALUES (?, ?, ?, 0)',
-      [req.userId, name, newOrder]
+      'INSERT INTO groups (user_id, name, sort_order) VALUES (?, ?, ?)',
+      [req.userId, name, nextSortOrder]
     );
 
     res.status(201).json({
       id: result.lastID,
       name,
-      sort_order: newOrder,
-      collapsed: 0,
-      record_count: 0,
+      sort_order: nextSortOrder,
     });
   } catch (error) {
     console.error('Error creating group:', error);
-    res.status(500).json({ error: 'Failed to create group' });
+    res.status(500).json({ error: 'Error creating group' });
   }
 });
 
-// Update a group
+// Update group name
 router.put('/:id', authenticate, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, sort_order, collapsed } = req.body;
+  const { id } = req.params;
+  const { name } = req.body;
 
-    // Verify the group belongs to the user
+  if (!name) {
+    return res.status(400).json({ error: 'Group name is required' });
+  }
+
+  try {
+    // Verify group belongs to user
     const group = await get(
       'SELECT * FROM groups WHERE id = ? AND user_id = ?',
       [id, req.userId]
@@ -71,37 +69,77 @@ router.put('/:id', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Group not found' });
     }
 
-    if (name) {
-      await run('UPDATE groups SET name = ? WHERE id = ?', [name, id]);
+    await run('UPDATE groups SET name = ? WHERE id = ?', [name, id]);
+    res.json({ message: 'Group updated successfully' });
+  } catch (error) {
+    console.error('Error updating group:', error);
+    res.status(500).json({ error: 'Error updating group' });
+  }
+});
+
+// Update group sort order
+router.put('/:id/sort', authenticate, async (req, res) => {
+  const { id } = req.params;
+  const { sort_order } = req.body;
+
+  if (sort_order === undefined) {
+    return res.status(400).json({ error: 'Sort order is required' });
+  }
+
+  try {
+    // Verify group belongs to user
+    const group = await get(
+      'SELECT * FROM groups WHERE id = ? AND user_id = ?',
+      [id, req.userId]
+    );
+
+    if (!group) {
+      return res.status(404).json({ error: 'Group not found' });
     }
 
-    if (sort_order !== undefined) {
+    // Start a transaction
+    await run('BEGIN TRANSACTION');
+
+    try {
+      // Update the sort order of the moved group
       await run('UPDATE groups SET sort_order = ? WHERE id = ?', [
         sort_order,
         id,
       ]);
-    }
 
-    if (collapsed !== undefined) {
-      await run('UPDATE groups SET collapsed = ? WHERE id = ?', [
-        collapsed ? 1 : 0,
-        id,
-      ]);
-    }
+      // Update other groups' sort orders
+      if (sort_order > group.sort_order) {
+        // Moving down
+        await run(
+          'UPDATE groups SET sort_order = sort_order - 1 WHERE user_id = ? AND sort_order > ? AND sort_order <= ? AND id != ?',
+          [req.userId, group.sort_order, sort_order, id]
+        );
+      } else {
+        // Moving up
+        await run(
+          'UPDATE groups SET sort_order = sort_order + 1 WHERE user_id = ? AND sort_order >= ? AND sort_order < ? AND id != ?',
+          [req.userId, sort_order, group.sort_order, id]
+        );
+      }
 
-    res.json({ message: 'Group updated successfully' });
+      await run('COMMIT');
+      res.json({ message: 'Group sort order updated successfully' });
+    } catch (error) {
+      await run('ROLLBACK');
+      throw error;
+    }
   } catch (error) {
-    console.error('Error updating group:', error);
-    res.status(500).json({ error: 'Failed to update group' });
+    console.error('Error updating group sort order:', error);
+    res.status(500).json({ error: 'Error updating group sort order' });
   }
 });
 
 // Delete a group
 router.delete('/:id', authenticate, async (req, res) => {
-  try {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    // Verify the group belongs to the user
+  try {
+    // Verify group belongs to user
     const group = await get(
       'SELECT * FROM groups WHERE id = ? AND user_id = ?',
       [id, req.userId]
@@ -111,19 +149,28 @@ router.delete('/:id', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Group not found' });
     }
 
-    // Move all records to the default group (null)
-    await run(
-      'UPDATE overtime_records SET group_id = NULL WHERE group_id = ?',
-      [id]
-    );
+    // Start a transaction
+    await run('BEGIN TRANSACTION');
 
-    // Delete the group
-    await run('DELETE FROM groups WHERE id = ?', [id]);
+    try {
+      // Delete the group
+      await run('DELETE FROM groups WHERE id = ?', [id]);
 
-    res.json({ message: 'Group deleted successfully' });
+      // Update sort orders of remaining groups
+      await run(
+        'UPDATE groups SET sort_order = sort_order - 1 WHERE user_id = ? AND sort_order > ?',
+        [req.userId, group.sort_order]
+      );
+
+      await run('COMMIT');
+      res.json({ message: 'Group deleted successfully' });
+    } catch (error) {
+      await run('ROLLBACK');
+      throw error;
+    }
   } catch (error) {
     console.error('Error deleting group:', error);
-    res.status(500).json({ error: 'Failed to delete group' });
+    res.status(500).json({ error: 'Error deleting group' });
   }
 });
 

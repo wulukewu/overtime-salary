@@ -54,88 +54,125 @@
         <div v-else-if="records.length === 0" class="no-records">
           No records found
         </div>
-        <div v-else class="groups-list">
-          <div v-for="group in groups" :key="group.id" class="group-item">
-            <div class="group-header" @click="toggleGroup(group.id)">
-              <div class="group-name">
-                {{ group.name }}
-                <span class="group-total">
-                  (Total: {{ getGroupTotal(group.id) }})
-                </span>
-              </div>
-              <div class="group-actions">
-                <button @click.stop="editGroup(group)" class="edit-button">
-                  Edit
-                </button>
-                <button
-                  @click.stop="deleteGroup(group.id)"
-                  class="delete-button group-delete-button"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-            <div
-              v-if="!group.collapsed"
-              class="group-records"
-              :data-group-id="group.id"
-            >
-              <draggable
-                :list="getGroupRecords(group.id)"
-                group="records"
-                @end="onDragEnd"
-                item-key="id"
-                class="records-container"
-                :animation="150"
-                ghost-class="ghost-card"
-                :data-group-id="group.id"
-              >
-                <template #item="{ element: record }">
-                  <div class="record-card" :data-id="record.id">
-                    <div class="record-header">
-                      <div class="record-date">
-                        {{ formatDate(record.date) }}
-                      </div>
-                      <div class="record-actions">
-                        <button @click="editRecord(record)" class="edit-button">
-                          Edit
-                        </button>
-                        <button
-                          class="delete-button record-delete-button"
-                          @click="deleteRecord(record.id)"
-                          :disabled="deletingId === record.id"
+        <div v-else class="groups-container">
+          <DragDropContext @drag-end="onGroupDragEnd">
+            <Droppable droppableId="groups" direction="vertical">
+              <template #default="{ droppableProps, innerRef, placeholder }">
+                <div class="groups-list" v-bind="droppableProps" ref="innerRef">
+                  <Draggable
+                    v-for="group in groups"
+                    :key="group.id"
+                    :draggableId="group.id.toString()"
+                  >
+                    <template
+                      #default="{ draggableProps, dragHandleProps, innerRef }"
+                    >
+                      <div
+                        class="group-item"
+                        v-bind="draggableProps"
+                        ref="innerRef"
+                      >
+                        <div class="group-header" v-bind="dragHandleProps">
+                          <div class="group-name">
+                            {{ group.name }}
+                            <span class="group-total">
+                              (Total: {{ getGroupTotal(group.id) }})
+                            </span>
+                          </div>
+                          <div class="group-actions">
+                            <button
+                              @click="editGroup(group)"
+                              class="edit-button"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              @click.stop="deleteGroup(group.id)"
+                              class="delete-button group-delete-button"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                        <div
+                          v-if="!group.collapsed"
+                          class="group-records"
+                          :data-group-id="group.id"
                         >
-                          {{
-                            deletingId === record.id ? 'Deleting...' : 'Delete'
-                          }}
-                        </button>
+                          <draggable
+                            :list="getGroupRecords(group.id)"
+                            group="records"
+                            @end="onDragEnd"
+                            item-key="id"
+                            class="records-container"
+                            :animation="150"
+                            ghost-class="ghost-card"
+                            :data-group-id="group.id"
+                          >
+                            <template #item="{ element: record }">
+                              <div class="record-card" :data-id="record.id">
+                                <div class="record-header">
+                                  <div class="record-date">
+                                    {{ formatDate(record.date) }}
+                                  </div>
+                                  <div class="record-actions">
+                                    <button
+                                      @click="editRecord(record)"
+                                      class="edit-button"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      class="delete-button record-delete-button"
+                                      @click="deleteRecord(record.id)"
+                                      :disabled="deletingId === record.id"
+                                    >
+                                      {{
+                                        deletingId === record.id
+                                          ? 'Deleting...'
+                                          : 'Delete'
+                                      }}
+                                    </button>
+                                  </div>
+                                </div>
+                                <div class="record-details">
+                                  <div class="detail-item">
+                                    <span class="detail-label">Salary:</span>
+                                    <span class="detail-value">{{
+                                      record.salary
+                                    }}</span>
+                                  </div>
+                                  <div class="detail-item">
+                                    <span class="detail-label">End Hour:</span>
+                                    <span class="detail-value">{{
+                                      record.end_hour
+                                    }}</span>
+                                  </div>
+                                  <div class="detail-item">
+                                    <span class="detail-label">Minutes:</span>
+                                    <span class="detail-value">{{
+                                      record.minutes
+                                    }}</span>
+                                  </div>
+                                  <div class="detail-item">
+                                    <span class="detail-label">Pay:</span>
+                                    <span class="detail-value pay-value">{{
+                                      record.calculated_pay
+                                    }}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </template>
+                          </draggable>
+                        </div>
                       </div>
-                    </div>
-                    <div class="record-details">
-                      <div class="detail-item">
-                        <span class="detail-label">Salary:</span>
-                        <span class="detail-value">{{ record.salary }}</span>
-                      </div>
-                      <div class="detail-item">
-                        <span class="detail-label">End Hour:</span>
-                        <span class="detail-value">{{ record.end_hour }}</span>
-                      </div>
-                      <div class="detail-item">
-                        <span class="detail-label">Minutes:</span>
-                        <span class="detail-value">{{ record.minutes }}</span>
-                      </div>
-                      <div class="detail-item">
-                        <span class="detail-label">Pay:</span>
-                        <span class="detail-value pay-value">{{
-                          record.calculated_pay
-                        }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-              </draggable>
-            </div>
-          </div>
+                    </template>
+                  </Draggable>
+                  {{ placeholder }}
+                </div>
+              </template>
+            </Droppable>
+          </DragDropContext>
           <!-- Ungrouped records -->
           <div class="group-item">
             <div class="group-header" @click="toggleGroup('ungrouped')">
@@ -333,11 +370,15 @@
 import { ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import draggable from 'vuedraggable';
+import { DragDropContext, Droppable, Draggable } from 'vue-draggable-next';
 
 export default {
-  name: 'OvertimeDashboard',
+  name: 'Dashboard',
   components: {
     draggable,
+    DragDropContext,
+    Droppable,
+    Draggable,
   },
   setup() {
     const store = useStore();
@@ -788,6 +829,40 @@ export default {
       }
     };
 
+    const onGroupDragEnd = async (result) => {
+      if (!result.destination) return;
+
+      const { source, destination } = result;
+      const groupId = parseInt(result.draggableId);
+      const newSortOrder = destination.index + 1;
+
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/groups/${groupId}/sort`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${store.state.token}`,
+            },
+            body: JSON.stringify({ sort_order: newSortOrder }),
+          }
+        );
+
+        if (response.ok) {
+          // Update local state
+          const updatedGroups = [...groups.value];
+          const [movedGroup] = updatedGroups.splice(source.index, 1);
+          updatedGroups.splice(destination.index, 0, movedGroup);
+          groups.value = updatedGroups;
+        } else {
+          console.error('Failed to update group sort order');
+        }
+      } catch (error) {
+        console.error('Error updating group sort order:', error);
+      }
+    };
+
     onMounted(async () => {
       await Promise.all([fetchGroups(), fetchRecords()]);
     });
@@ -826,6 +901,7 @@ export default {
       editRecord,
       updateRecord,
       onDragEnd,
+      onGroupDragEnd,
     };
   },
 };
@@ -919,45 +995,49 @@ button:disabled {
   cursor: pointer;
 }
 
-.groups-list {
+.groups-container {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
 .group-item {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 1rem;
 }
 
 .group-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  cursor: pointer;
+  cursor: move;
+  padding: 0.5rem;
+  background: #f8f9fa;
   border-radius: 4px;
-  transition: background-color 0.2s;
 }
 
-.group-header:hover {
-  background-color: #e9ecef;
-}
-
-.group-name {
-  font-weight: bold;
-}
-
-.group-total {
-  color: #4caf50;
-  margin-left: 0.5rem;
+.group-header h3 {
+  margin: 0;
 }
 
 .group-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.group-actions button {
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #e9ecef;
+}
+
+.group-actions button:hover {
+  background-color: #dee2e6;
 }
 
 .group-records {
