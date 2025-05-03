@@ -30,10 +30,6 @@ app.post('/api/calculate', (req, res) => {
   res.json({ result });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
-
 initDatabase().then(() => {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
