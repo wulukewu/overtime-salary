@@ -186,4 +186,28 @@ router.post('/calculate', (req, res) => {
   res.json({ result: Math.round(overtimePay * 100) / 100 });
 });
 
+router.delete('/:id', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+
+    // First verify the record belongs to the user
+    const record = await db.get(
+      'SELECT * FROM overtime_records WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
+    if (!record) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+
+    // Delete the record
+    await db.run('DELETE FROM overtime_records WHERE id = ?', [id]);
+    res.status(200).json({ message: 'Record deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting record:', error);
+    res.status(500).json({ error: 'Failed to delete record' });
+  }
+});
+
 module.exports = router;

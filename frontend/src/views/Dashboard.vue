@@ -58,6 +58,13 @@
               <div>Minutes: {{ record.minutes }}</div>
               <div class="record-pay">Pay: {{ record.calculated_pay }}</div>
             </div>
+            <button
+              class="delete-button"
+              @click="deleteRecord(record.id)"
+              :disabled="deletingId === record.id"
+            >
+              {{ deletingId === record.id ? 'Deleting...' : 'Delete' }}
+            </button>
           </div>
         </div>
       </div>
@@ -81,6 +88,7 @@ export default {
     const saving = ref(false);
     const records = ref([]);
     const loadingRecords = ref(true);
+    const deletingId = ref(null);
 
     const calculateOvertime = async () => {
       error.value = '';
@@ -205,6 +213,31 @@ export default {
       }
     };
 
+    const deleteRecord = async (recordId) => {
+      deletingId.value = recordId;
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/overtime/${recordId}`,
+          {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${store.state.token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to delete record');
+        }
+        await fetchRecords();
+      } catch (err) {
+        console.error('Error deleting record:', err);
+        error.value = err.message;
+      } finally {
+        deletingId.value = null;
+      }
+    };
+
     const formatDate = (dateString) => {
       return new Date(dateString).toLocaleDateString();
     };
@@ -221,8 +254,10 @@ export default {
       saving,
       records,
       loadingRecords,
+      deletingId,
       calculateOvertime,
       saveRecord,
+      deleteRecord,
       formatDate,
     };
   },
@@ -304,9 +339,11 @@ button:disabled {
 }
 
 .record-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border-bottom: 1px solid #eee;
 }
 
 .record-date {
@@ -324,6 +361,21 @@ button:disabled {
   grid-column: span 2;
   font-weight: bold;
   color: #4caf50;
+}
+
+.delete-button {
+  padding: 0.5rem 1rem;
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.delete-button:disabled {
+  background-color: #ff9999;
+  cursor: not-allowed;
 }
 
 .loading,
