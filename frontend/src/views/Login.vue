@@ -1,7 +1,7 @@
 <template>
-  <div class="login">
+  <div class="login-container">
     <h2>Login</h2>
-    <form @submit.prevent="handleLogin">
+    <form class="login-form" @submit.prevent="handleLogin">
       <div class="form-group">
         <label for="login">Username or Email</label>
         <input
@@ -83,6 +83,7 @@ export default {
   max-width: 400px;
   margin: 2rem auto;
   padding: 2rem;
+  background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -100,10 +101,16 @@ export default {
 }
 
 input {
-  padding: 0.5rem;
+  padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+input:focus {
+  outline: none;
+  border-color: #4caf50;
 }
 
 button {
@@ -114,6 +121,12 @@ button {
   border-radius: 4px;
   cursor: pointer;
   font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #45a049;
 }
 
 button:disabled {
@@ -129,14 +142,22 @@ button:disabled {
 .register-link {
   text-align: center;
   margin-top: 1rem;
+  color: #666;
 }
 
 .register-link a {
   color: #4caf50;
   text-decoration: none;
+  font-weight: 500;
 }
 
 .register-link a:hover {
   text-decoration: underline;
+}
+
+h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 1.5rem;
 }
 </style>

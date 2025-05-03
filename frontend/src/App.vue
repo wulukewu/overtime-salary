@@ -6,6 +6,7 @@
         <router-link to="/dashboard" v-if="isAuthenticated"
           >Dashboard</router-link
         >
+        <router-link to="/admin" v-if="isAdmin">Admin Panel</router-link>
       </div>
       <div class="nav-right">
         <template v-if="isAuthenticated">
@@ -54,6 +55,7 @@ export default {
     const username = ref('');
 
     const isAuthenticated = computed(() => store.state.token !== null);
+    const isAdmin = computed(() => store.state.isAdmin);
 
     const logout = () => {
       store.dispatch('logout');
@@ -74,6 +76,7 @@ export default {
           if (response.ok) {
             const data = await response.json();
             username.value = data.username;
+            store.commit('setAdmin', data.is_admin);
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
@@ -85,6 +88,7 @@ export default {
 
     return {
       isAuthenticated,
+      isAdmin,
       username,
       showDropdown,
       logout,

@@ -1,6 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const bcrypt = require('bcrypt');
+const path = require('path');
 
 const DB_FILE = './database.sqlite';
 const SALT_ROUNDS = 10;
@@ -20,6 +21,7 @@ const initDatabase = async () => {
           password TEXT NOT NULL,
           monthly_salary REAL DEFAULT 0,
           is_admin BOOLEAN DEFAULT 0,
+          force_password_change INTEGER DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
@@ -32,6 +34,7 @@ const initDatabase = async () => {
           name TEXT NOT NULL,
           sort_order INTEGER DEFAULT 0,
           collapsed BOOLEAN DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (user_id) REFERENCES users(id)
         )
       `);
@@ -48,6 +51,7 @@ const initDatabase = async () => {
           calculated_pay REAL NOT NULL,
           group_id INTEGER,
           sort_order INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (user_id) REFERENCES users(id),
           FOREIGN KEY (group_id) REFERENCES groups(id)
         )

@@ -4,7 +4,7 @@ export default createStore({
   state: {
     user: null,
     token: localStorage.getItem('token') || null,
-    isAdmin: localStorage.getItem('isAdmin') === 'true' || false,
+    isAdmin: localStorage.getItem('isAdmin') === 'true',
     monthly_salary: localStorage.getItem('monthly_salary')
       ? Number(localStorage.getItem('monthly_salary'))
       : 0,
@@ -23,7 +23,11 @@ export default createStore({
     },
     setAdmin(state, isAdmin) {
       state.isAdmin = isAdmin;
-      localStorage.setItem('isAdmin', isAdmin);
+      if (isAdmin) {
+        localStorage.setItem('isAdmin', 'true');
+      } else {
+        localStorage.removeItem('isAdmin');
+      }
     },
     logout(state) {
       state.user = null;

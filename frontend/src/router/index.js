@@ -5,6 +5,7 @@ import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
 import UserSettings from '../views/Settings.vue';
 import Profile from '../views/Profile.vue';
+import Admin from '../views/Admin.vue';
 
 const routes = [
   {
@@ -40,6 +41,12 @@ const routes = [
     component: Profile,
     meta: { requiresAuth: true },
   },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: Admin,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
 ];
 
 const router = createRouter({
@@ -50,10 +57,16 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach((to, from, next) => {
   const isAuthenticated = localStorage.getItem('token') !== null;
+  const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (!isAuthenticated) {
       next({ name: 'Login' });
+    } else if (
+      to.matched.some((record) => record.meta.requiresAdmin) &&
+      !isAdmin
+    ) {
+      next({ name: 'Dashboard' });
     } else {
       next();
     }
