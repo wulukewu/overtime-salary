@@ -16,9 +16,11 @@ const initDatabase = async () => {
         CREATE TABLE IF NOT EXISTS users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           email TEXT UNIQUE NOT NULL,
+          username TEXT UNIQUE NOT NULL,
           password TEXT NOT NULL,
           monthly_salary REAL DEFAULT 0,
-          is_admin BOOLEAN DEFAULT 0
+          is_admin BOOLEAN DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
 
@@ -58,40 +60,17 @@ const initDatabase = async () => {
           }
 
           try {
-            // Check if admin user exists
-            const adminUser = await new Promise((resolve, reject) => {
-              db.get(
-                'SELECT * FROM users WHERE email = ?',
-                ['admin@system.local'],
-                (err, row) => {
-                  if (err) reject(err);
-                  else resolve(row);
-                }
+            // Create admin user if not exists
+            const adminCheck = await db.get(
+              'SELECT * FROM users WHERE is_admin = 1'
+            );
+            if (!adminCheck) {
+              const hashedPassword = await bcrypt.hash('admin', SALT_ROUNDS);
+              await db.run(
+                'INSERT INTO users (email, username, password, is_admin) VALUES (?, ?, ?, ?)',
+                ['admin@system.local', 'admin', hashedPassword, 1]
               );
-            });
-
-            if (!adminUser) {
-              console.log('Creating admin user...');
-              const defaultPassword = 'admin';
-              const hashedPassword = await bcrypt.hash(
-                defaultPassword,
-                SALT_ROUNDS
-              );
-
-              await new Promise((resolve, reject) => {
-                db.run(
-                  'INSERT INTO users (email, password, is_admin) VALUES (?, ?, ?)',
-                  ['admin@system.local', hashedPassword, 1],
-                  function (err) {
-                    if (err) reject(err);
-                    else resolve(this);
-                  }
-                );
-              });
-
-              console.log(
-                'Admin user created (email: admin@system.local, password: admin)'
-              );
+              console.log('Admin user created');
             }
 
             resolve();

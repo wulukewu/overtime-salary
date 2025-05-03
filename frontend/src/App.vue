@@ -73,7 +73,7 @@ export default {
           );
           if (response.ok) {
             const data = await response.json();
-            username.value = data.email;
+            username.value = data.username;
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);

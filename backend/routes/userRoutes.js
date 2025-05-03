@@ -23,88 +23,91 @@ const isAdmin = async (req, res, next) => {
   }
 };
 
-// User registration
+// Register a new user
 router.post('/register', async (req, res) => {
-  const { email, password } = req.body;
-  console.log('Registration attempt:', { email });
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'All fields are required' });
-  }
-
   try {
-    // Check if user already exists
-    const existingUser = await get('SELECT * FROM users WHERE email = ?', [
-      email,
-    ]);
-    console.log('Existing user check:', existingUser);
+    const { email, username, password } = req.body;
+
+    // Validate input
+    if (!email || !username || !password) {
+      return res
+        .status(400)
+        .json({ error: 'Email, username, and password are required' });
+    }
+
+    // Check if email or username already exists
+    const existingUser = await get(
+      'SELECT * FROM users WHERE email = ? OR username = ?',
+      [email, username]
+    );
 
     if (existingUser) {
-      return res.status(400).json({ error: 'Email already exists' });
+      return res.status(400).json({
+        error:
+          existingUser.email === email
+            ? 'Email already exists'
+            : 'Username already exists',
+      });
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-    console.log('Password hashed successfully');
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
     const result = await run(
-      'INSERT INTO users (email, password) VALUES (?, ?)',
-      [email, hashedPassword]
+      'INSERT INTO users (email, username, password) VALUES (?, ?, ?)',
+      [email, username, hashedPassword]
     );
-    console.log('User created with ID:', result.lastID);
-
-    // Generate JWT token
-    const token = jwt.sign({ id: result.lastID }, JWT_SECRET);
 
     res.status(201).json({
+      message: 'User registered successfully',
       id: result.lastID,
-      email,
-      token,
     });
   } catch (error) {
-    console.error('Error registering user:', error);
-    res.status(500).json({ error: 'Failed to register user' });
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// User login
+// Login user
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  console.log('Login attempt:', { email });
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'All fields are required' });
-  }
-
   try {
-    const user = await get('SELECT * FROM users WHERE email = ?', [email]);
-    console.log('User found:', user);
+    const { login, password } = req.body;
+
+    if (!login || !password) {
+      return res.status(400).json({ error: 'Login and password are required' });
+    }
+
+    // Find user by email or username
+    const user = await get(
+      'SELECT * FROM users WHERE email = ? OR username = ?',
+      [login, login]
+    );
 
     if (!user) {
-      console.log('No user found with email:', email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const validPassword = await bcrypt.compare(password, user.password);
-    console.log('Password validation:', validPassword);
-
-    if (!validPassword) {
-      console.log('Invalid password for user:', email);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user.id }, JWT_SECRET);
-    console.log('Login successful for user:', email);
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        isAdmin: user.is_admin,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
 
-    res.json({
-      id: user.id,
-      email: user.email,
-      token,
-    });
+    res.json({ token, username: user.username });
   } catch (error) {
-    console.error('Error logging in:', error);
-    res.status(500).json({ error: 'Failed to login' });
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -232,16 +235,17 @@ router.put('/profile', authenticate, (req, res) => {
 // Get user profile
 router.get('/profile', authenticate, async (req, res) => {
   try {
-    const user = await get('SELECT id, email FROM users WHERE id = ?', [
-      req.userId,
-    ]);
+    const user = await get(
+      'SELECT id, email, username, is_admin FROM users WHERE id = ?',
+      [req.userId]
+    );
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
     res.json(user);
   } catch (error) {
-    console.error('Error fetching profile:', error);
-    res.status(500).json({ error: 'Failed to fetch profile' });
+    console.error('Profile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

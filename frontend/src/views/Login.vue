@@ -1,19 +1,19 @@
 <template>
-  <div class="login-container">
+  <div class="login">
     <h2>Login</h2>
-    <form @submit.prevent="handleLogin" class="login-form">
+    <form @submit.prevent="handleLogin">
       <div class="form-group">
-        <label for="email">Email:</label>
+        <label for="login">Username or Email</label>
         <input
-          type="email"
-          id="email"
-          v-model="email"
+          type="text"
+          id="login"
+          v-model="login"
           required
-          placeholder="Enter your email"
+          placeholder="Enter your username or email"
         />
       </div>
       <div class="form-group">
-        <label for="password">Password:</label>
+        <label for="password">Password</label>
         <input
           type="password"
           id="password"
@@ -22,15 +22,13 @@
           placeholder="Enter your password"
         />
       </div>
-      <div v-if="error" class="error-message">{{ error }}</div>
       <button type="submit" :disabled="loading">
         {{ loading ? 'Logging in...' : 'Login' }}
       </button>
-      <p class="register-link">
-        Don't have an account?
-        <router-link to="/register">Register here</router-link>
-      </p>
     </form>
+    <p class="register-link">
+      Don't have an account? <router-link to="/register">Register</router-link>
+    </p>
   </div>
 </template>
 
@@ -40,40 +38,47 @@ import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 
 export default {
-  name: 'LoginPage',
+  name: 'Login',
   setup() {
     const store = useStore();
     const router = useRouter();
-    const email = ref('');
+    const loginInput = ref('');
     const password = ref('');
-    const error = ref('');
     const loading = ref(false);
 
     const handleLogin = async () => {
-      error.value = '';
       loading.value = true;
       try {
-        const result = await store.dispatch('login', {
-          email: email.value,
-          password: password.value,
+        const response = await fetch('http://localhost:3000/api/users/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            login: loginInput.value,
+            password: password.value,
+          }),
         });
 
-        if (result.success) {
+        if (response.ok) {
+          const data = await response.json();
+          store.dispatch('login', data.token);
           router.push('/dashboard');
         } else {
-          error.value = result.error;
+          const data = await response.json();
+          alert(data.error || 'Login failed');
         }
-      } catch (err) {
-        error.value = 'An error occurred during login';
+      } catch (error) {
+        console.error('Login error:', error);
+        alert('Login failed. Please try again.');
       } finally {
         loading.value = false;
       }
     };
 
     return {
-      email,
+      login: loginInput,
       password,
-      error,
       loading,
       handleLogin,
     };

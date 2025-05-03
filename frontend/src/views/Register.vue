@@ -23,6 +23,16 @@
         />
       </div>
       <div class="form-group">
+        <label for="username">Username:</label>
+        <input
+          type="text"
+          id="username"
+          v-model="username"
+          required
+          placeholder="Choose a username"
+        />
+      </div>
+      <div class="form-group">
         <label for="password">Password:</label>
         <input
           type="password"
@@ -66,6 +76,7 @@ export default {
     const router = useRouter();
     const name = ref('');
     const email = ref('');
+    const username = ref('');
     const password = ref('');
     const confirmPassword = ref('');
     const error = ref('');
@@ -84,6 +95,7 @@ export default {
         const result = await store.dispatch('register', {
           name: name.value,
           email: email.value,
+          username: username.value,
           password: password.value,
         });
 
@@ -102,6 +114,7 @@ export default {
     return {
       name,
       email,
+      username,
       password,
       confirmPassword,
       error,
