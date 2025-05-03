@@ -9,36 +9,21 @@ const initDatabase = async () => {
   const dbExists = fs.existsSync(DB_FILE);
   const db = new sqlite3.Database(DB_FILE);
 
+  db.serialize(() => {
+    // Ensure tables exist
+    db.run(
+      'CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, email TEXT UNIQUE, password TEXT, is_admin INTEGER DEFAULT 0, force_password_change INTEGER DEFAULT 0)'
+    );
+
+    db.run(
+      'CREATE TABLE IF NOT EXISTS overtime_records (id INTEGER PRIMARY KEY, user_id INTEGER, date TEXT, salary INTEGER, end_hour INTEGER, minutes INTEGER, calculated_pay INTEGER, FOREIGN KEY(user_id) REFERENCES users(id))'
+    );
+  });
+
   if (!dbExists) {
     console.log('Creating new database...');
 
     db.serialize(() => {
-      // Users table
-      db.run(`
-        CREATE TABLE users (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          email TEXT UNIQUE NOT NULL,
-          password TEXT NOT NULL,
-          is_admin INTEGER DEFAULT 0,
-          force_password_change INTEGER DEFAULT 0
-        )
-      `);
-
-      // Overtime Records table
-      db.run(`
-        CREATE TABLE overtime_records (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER,
-          date TEXT,
-          salary INTEGER,
-          end_hour INTEGER,
-          minutes INTEGER,
-          calculated_pay INTEGER,
-          FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-      `);
-
       // Insert default admin
       const defaultPassword = 'admin';
       bcrypt.hash(defaultPassword, SALT_ROUNDS, (err, hashed) => {
@@ -47,9 +32,9 @@ const initDatabase = async () => {
         } else {
           db.run(
             `
-            INSERT INTO users (name, email, password, is_admin, force_password_change)
-            VALUES (?, ?, ?, ?, ?)
-          `,
+                        INSERT INTO users (name, email, password, is_admin, force_password_change)
+                        VALUES (?, ?, ?, ?, ?)
+                    `,
             ['Admin', 'admin@system.local', hashed, 1, 1]
           );
           console.log(
@@ -62,7 +47,7 @@ const initDatabase = async () => {
     console.log('Database already exists. Skipping setup.');
   }
 
-  return db;
+  return Promise.resolve(db);
 };
 
 module.exports = initDatabase;
