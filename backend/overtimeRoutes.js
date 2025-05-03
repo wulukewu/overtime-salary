@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { all, get, run } = require('../database');
-const calculateOvertimePay = require('../overtimeCalculator');
-const authenticate = require('../auth');
+const { all, get, run } = require('./database');
+const calculateOvertimePay = require('./overtimeCalculator');
+const authenticate = require('./auth');
 
 // Get all overtime records for the authenticated user
 router.get('/', authenticate, async (req, res) => {
@@ -141,9 +141,30 @@ router.put('/:id', authenticate, async (req, res) => {
   } = req.body;
   const userId = req.userId;
 
+  console.log('Updating record:', {
+    id,
+    userId,
+    group_id,
+    sort_order,
+    body: req.body,
+  });
+
   try {
     // Validate required fields
-    if (!date || !salary || !end_hour || !minutes || !calculated_pay) {
+    if (
+      !date ||
+      salary === undefined ||
+      end_hour === undefined ||
+      minutes === undefined ||
+      calculated_pay === undefined
+    ) {
+      console.log('Missing required fields:', {
+        date,
+        salary,
+        end_hour,
+        minutes,
+        calculated_pay,
+      });
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -154,6 +175,7 @@ router.put('/:id', authenticate, async (req, res) => {
     );
 
     if (!record) {
+      console.log('Record not found:', { id, userId });
       return res.status(404).json({ error: 'Record not found' });
     }
 
@@ -164,6 +186,7 @@ router.put('/:id', authenticate, async (req, res) => {
         [group_id, userId]
       );
       if (!group && group_id !== null) {
+        console.log('Invalid group:', { group_id, userId });
         return res.status(400).json({ error: 'Invalid group' });
       }
     }
@@ -177,11 +200,19 @@ router.put('/:id', authenticate, async (req, res) => {
         const currentGroupId =
           group_id !== undefined ? group_id : record.group_id;
 
+        console.log('Updating sort order:', {
+          currentGroupId,
+          sort_order,
+          recordId: id,
+        });
+
         // Get all records in the group
         const groupRecords = await all(
           'SELECT id, sort_order FROM overtime_records WHERE group_id = ? AND user_id = ? ORDER BY sort_order ASC',
           [currentGroupId, userId]
         );
+
+        console.log('Group records:', groupRecords);
 
         // Update sort orders
         for (let i = 0; i < groupRecords.length; i++) {
@@ -196,6 +227,11 @@ router.put('/:id', authenticate, async (req, res) => {
             newSortOrder = i + 1;
           }
 
+          console.log('Updating record sort order:', {
+            recordId,
+            newSortOrder,
+          });
+
           await run(
             'UPDATE overtime_records SET sort_order = ? WHERE id = ? AND user_id = ?',
             [newSortOrder, recordId, userId]
@@ -204,6 +240,16 @@ router.put('/:id', authenticate, async (req, res) => {
       }
 
       // Update the record
+      console.log('Updating record:', {
+        id,
+        date,
+        salary,
+        end_hour,
+        minutes,
+        calculated_pay,
+        group_id,
+      });
+
       await run(
         `UPDATE overtime_records 
          SET date = ?, salary = ?, end_hour = ?, minutes = ?, 
@@ -215,6 +261,7 @@ router.put('/:id', authenticate, async (req, res) => {
       await run('COMMIT');
       res.json({ message: 'Record updated successfully' });
     } catch (error) {
+      console.error('Transaction error:', error);
       await run('ROLLBACK');
       throw error;
     }

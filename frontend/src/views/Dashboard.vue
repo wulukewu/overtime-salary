@@ -752,6 +752,14 @@ export default {
           newSortOrder = 0;
         }
 
+        const updateData = {
+          ...record,
+          group_id: toGroupId === 'null' ? null : parseInt(toGroupId),
+          sort_order: newSortOrder,
+        };
+
+        console.log('Sending update data:', updateData);
+
         // Update the record's group_id and sort_order in the database
         const response = await fetch(
           `http://localhost:3000/api/overtime/${recordId}`,
@@ -761,11 +769,7 @@ export default {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${store.state.token}`,
             },
-            body: JSON.stringify({
-              ...record,
-              group_id: toGroupId === 'null' ? null : parseInt(toGroupId),
-              sort_order: newSortOrder,
-            }),
+            body: JSON.stringify(updateData),
           }
         );
 
