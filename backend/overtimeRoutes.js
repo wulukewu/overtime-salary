@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { all, get, run } = require('./database');
-const calculateOvertimePay = require('./overtimeCalculator');
-const authenticate = require('./auth');
+const { all, get, run } = require('../database');
+const calculateOvertimePay = require('../overtimeCalculator');
+const authenticate = require('../auth');
 
 // Get all overtime records for the authenticated user
 router.get('/', authenticate, async (req, res) => {
@@ -168,7 +168,7 @@ router.put('/:id', authenticate, async (req, res) => {
       }
     }
 
-    // Start a transaction to handle the sort order update
+    // Start a transaction
     await run('BEGIN TRANSACTION');
 
     try {
