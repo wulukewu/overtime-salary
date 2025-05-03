@@ -362,9 +362,13 @@ export default {
 
     const getGroupRecords = (groupId) => {
       if (groupId === 'ungrouped') {
-        return records.value.filter((record) => !record.group_id);
+        return records.value
+          .filter((record) => !record.group_id)
+          .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
       }
-      return records.value.filter((record) => record.group_id === groupId);
+      return records.value
+        .filter((record) => record.group_id === groupId)
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
     };
 
     const getGroupTotal = (groupId) => {
@@ -722,13 +726,8 @@ export default {
         toGroupId,
         fromElement: evt.from,
         toElement: evt.to,
+        newIndex: evt.newIndex,
       });
-
-      // If the group hasn't changed, do nothing
-      if (fromGroupId === toGroupId) {
-        console.log('No group change, skipping update');
-        return;
-      }
 
       try {
         // Find the record in our local state
@@ -737,7 +736,7 @@ export default {
           throw new Error('Record not found');
         }
 
-        // Update the record's group_id in the database
+        // Update the record's group_id and sort_order in the database
         const response = await fetch(
           `http://localhost:3000/api/overtime/${recordId}`,
           {
@@ -749,20 +748,21 @@ export default {
             body: JSON.stringify({
               ...record,
               group_id: toGroupId === 'null' ? null : parseInt(toGroupId),
+              sort_order: evt.newIndex,
             }),
           }
         );
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to update record group');
+          throw new Error(errorData.error || 'Failed to update record');
         }
 
-        console.log('Record group updated successfully');
+        console.log('Record updated successfully');
         // Refresh the records to reflect the change
         await fetchRecords();
       } catch (error) {
-        console.error('Error updating record group:', error);
+        console.error('Error updating record:', error);
         // Revert the drag operation by refreshing the records
         await fetchRecords();
       }

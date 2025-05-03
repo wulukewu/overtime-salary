@@ -41,13 +41,13 @@ const initDatabase = async () => {
         CREATE TABLE IF NOT EXISTS overtime_records (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           user_id INTEGER NOT NULL,
-          group_id INTEGER,
           date TEXT NOT NULL,
           salary REAL NOT NULL,
           end_hour INTEGER NOT NULL,
           minutes INTEGER NOT NULL,
-          calculated_pay INTEGER NOT NULL,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          calculated_pay REAL NOT NULL,
+          group_id INTEGER,
+          sort_order INTEGER DEFAULT 0,
           FOREIGN KEY (user_id) REFERENCES users(id),
           FOREIGN KEY (group_id) REFERENCES groups(id)
         )
