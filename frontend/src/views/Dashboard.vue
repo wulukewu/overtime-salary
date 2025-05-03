@@ -69,36 +69,68 @@
                 </button>
                 <button
                   @click.stop="deleteGroup(group.id)"
-                  class="delete-button"
+                  class="delete-button group-delete-button"
                 >
                   Delete
                 </button>
               </div>
             </div>
             <div
-              v-if="!collapsedGroups.includes(group.id)"
+              v-if="!group.collapsed"
               class="group-records"
+              :data-group-id="group.id"
             >
-              <div
-                v-for="record in getGroupRecords(group.id)"
-                :key="record.id"
-                class="record-item"
+              <draggable
+                :list="getGroupRecords(group.id)"
+                group="records"
+                @end="onDragEnd"
+                item-key="id"
+                class="records-container"
               >
-                <div class="record-date">{{ formatDate(record.date) }}</div>
-                <div class="record-details">
-                  <div>Salary: {{ record.salary }}</div>
-                  <div>End Hour: {{ record.end_hour }}</div>
-                  <div>Minutes: {{ record.minutes }}</div>
-                  <div class="record-pay">Pay: {{ record.calculated_pay }}</div>
-                </div>
-                <button
-                  class="delete-button"
-                  @click="deleteRecord(record.id)"
-                  :disabled="deletingId === record.id"
-                >
-                  {{ deletingId === record.id ? 'Deleting...' : 'Delete' }}
-                </button>
-              </div>
+                <template #item="{ element: record }">
+                  <div class="record-card">
+                    <div class="record-header">
+                      <div class="record-date">
+                        {{ formatDate(record.date) }}
+                      </div>
+                      <div class="record-actions">
+                        <button @click="editRecord(record)" class="edit-button">
+                          Edit
+                        </button>
+                        <button
+                          class="delete-button record-delete-button"
+                          @click="deleteRecord(record.id)"
+                          :disabled="deletingId === record.id"
+                        >
+                          {{
+                            deletingId === record.id ? 'Deleting...' : 'Delete'
+                          }}
+                        </button>
+                      </div>
+                    </div>
+                    <div class="record-details">
+                      <div class="detail-item">
+                        <span class="detail-label">Salary:</span>
+                        <span class="detail-value">{{ record.salary }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">End Hour:</span>
+                        <span class="detail-value">{{ record.end_hour }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Minutes:</span>
+                        <span class="detail-value">{{ record.minutes }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Pay:</span>
+                        <span class="detail-value pay-value">{{
+                          record.calculated_pay
+                        }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </draggable>
             </div>
           </div>
           <!-- Ungrouped records -->
@@ -114,27 +146,59 @@
             <div
               v-if="!collapsedGroups.includes('ungrouped')"
               class="group-records"
+              data-group-id="null"
             >
-              <div
-                v-for="record in getGroupRecords('ungrouped')"
-                :key="record.id"
-                class="record-item"
+              <draggable
+                :list="getGroupRecords('ungrouped')"
+                group="records"
+                @end="onDragEnd"
+                item-key="id"
+                class="records-container"
               >
-                <div class="record-date">{{ formatDate(record.date) }}</div>
-                <div class="record-details">
-                  <div>Salary: {{ record.salary }}</div>
-                  <div>End Hour: {{ record.end_hour }}</div>
-                  <div>Minutes: {{ record.minutes }}</div>
-                  <div class="record-pay">Pay: {{ record.calculated_pay }}</div>
-                </div>
-                <button
-                  class="delete-button"
-                  @click="deleteRecord(record.id)"
-                  :disabled="deletingId === record.id"
-                >
-                  {{ deletingId === record.id ? 'Deleting...' : 'Delete' }}
-                </button>
-              </div>
+                <template #item="{ element: record }">
+                  <div class="record-card">
+                    <div class="record-header">
+                      <div class="record-date">
+                        {{ formatDate(record.date) }}
+                      </div>
+                      <div class="record-actions">
+                        <button @click="editRecord(record)" class="edit-button">
+                          Edit
+                        </button>
+                        <button
+                          class="delete-button record-delete-button"
+                          @click="deleteRecord(record.id)"
+                          :disabled="deletingId === record.id"
+                        >
+                          {{
+                            deletingId === record.id ? 'Deleting...' : 'Delete'
+                          }}
+                        </button>
+                      </div>
+                    </div>
+                    <div class="record-details">
+                      <div class="detail-item">
+                        <span class="detail-label">Salary:</span>
+                        <span class="detail-value">{{ record.salary }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">End Hour:</span>
+                        <span class="detail-value">{{ record.end_hour }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Minutes:</span>
+                        <span class="detail-value">{{ record.minutes }}</span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Pay:</span>
+                        <span class="detail-value pay-value">{{
+                          record.calculated_pay
+                        }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </draggable>
             </div>
           </div>
         </div>
@@ -185,16 +249,90 @@
           </form>
         </div>
       </div>
+
+      <!-- Edit Record Modal -->
+      <div v-if="editingRecord" class="modal">
+        <div class="modal-content">
+          <h3>Edit Record</h3>
+          <form @submit.prevent="updateRecord">
+            <div class="form-group">
+              <label for="editDate">Date:</label>
+              <input
+                type="date"
+                id="editDate"
+                v-model="editingRecord.date"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="editSalary">Salary:</label>
+              <input
+                type="number"
+                id="editSalary"
+                v-model.number="editingRecord.salary"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="editEndHour">End Hour (24h):</label>
+              <input
+                type="number"
+                id="editEndHour"
+                v-model.number="editingRecord.end_hour"
+                required
+                min="19"
+                max="23"
+              />
+            </div>
+            <div class="form-group">
+              <label for="editMinutes">Minutes:</label>
+              <input
+                type="number"
+                id="editMinutes"
+                v-model.number="editingRecord.minutes"
+                required
+                min="0"
+                max="59"
+              />
+            </div>
+            <div class="form-group">
+              <label for="editGroup">Group:</label>
+              <select id="editGroup" v-model="editingRecord.group_id">
+                <option :value="null">Ungrouped</option>
+                <option
+                  v-for="group in groups"
+                  :key="group.id"
+                  :value="group.id"
+                >
+                  {{ group.name }}
+                </option>
+              </select>
+            </div>
+            <div class="modal-actions">
+              <button type="submit" :disabled="updatingRecord">
+                {{ updatingRecord ? 'Updating...' : 'Update' }}
+              </button>
+              <button type="button" @click="editingRecord = null">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
+import draggable from 'vuedraggable';
 
 export default {
   name: 'OvertimeDashboard',
+  components: {
+    draggable,
+  },
   setup() {
     const store = useStore();
     const end_hour = ref(19);
@@ -213,6 +351,8 @@ export default {
     const editingGroup = ref(null);
     const updatingGroup = ref(false);
     const collapsedGroups = ref([]);
+    const editingRecord = ref(null);
+    const updatingRecord = ref(false);
 
     const getGroupRecords = (groupId) => {
       if (groupId === 'ungrouped') {
@@ -229,12 +369,42 @@ export default {
       );
     };
 
-    const toggleGroup = (groupId) => {
-      const index = collapsedGroups.value.indexOf(groupId);
-      if (index === -1) {
-        collapsedGroups.value.push(groupId);
-      } else {
-        collapsedGroups.value.splice(index, 1);
+    const toggleGroup = async (groupId) => {
+      if (groupId === 'ungrouped') {
+        const index = collapsedGroups.value.indexOf(groupId);
+        if (index === -1) {
+          collapsedGroups.value.push(groupId);
+        } else {
+          collapsedGroups.value.splice(index, 1);
+        }
+        return;
+      }
+
+      const group = groups.value.find((g) => g.id === groupId);
+      if (group) {
+        try {
+          const response = await fetch(
+            `http://localhost:3000/api/groups/${groupId}`,
+            {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${store.state.token}`,
+              },
+              body: JSON.stringify({
+                collapsed: !group.collapsed,
+              }),
+            }
+          );
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to update group state');
+          }
+          await fetchGroups();
+        } catch (err) {
+          console.error('Error toggling group:', err);
+          error.value = err.message;
+        }
       }
     };
 
@@ -331,6 +501,10 @@ export default {
           throw new Error(errorData.error || 'Failed to fetch groups');
         }
         groups.value = await response.json();
+        // Initialize collapsed groups from the database
+        collapsedGroups.value = groups.value
+          .filter((group) => group.collapsed)
+          .map((group) => group.id);
       } catch (err) {
         console.error('Error fetching groups:', err);
         error.value = err.message;
@@ -490,6 +664,70 @@ export default {
       return new Date(dateString).toLocaleDateString();
     };
 
+    const editRecord = (record) => {
+      editingRecord.value = { ...record };
+    };
+
+    const updateRecord = async () => {
+      updatingRecord.value = true;
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/overtime/${editingRecord.value.id}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${store.state.token}`,
+            },
+            body: JSON.stringify(editingRecord.value),
+          }
+        );
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update record');
+        }
+        await fetchRecords();
+        editingRecord.value = null;
+      } catch (err) {
+        console.error('Error updating record:', err);
+        error.value = err.message;
+      } finally {
+        updatingRecord.value = false;
+      }
+    };
+
+    const onDragEnd = async (evt) => {
+      const record = evt.item._underlying_vm_;
+      const newGroupId = evt.to.dataset.groupId || null;
+
+      if (record.group_id !== newGroupId) {
+        try {
+          const response = await fetch(
+            `http://localhost:3000/api/overtime/${record.id}`,
+            {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${store.state.token}`,
+              },
+              body: JSON.stringify({
+                ...record,
+                group_id: newGroupId,
+              }),
+            }
+          );
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to update record group');
+          }
+          await fetchRecords();
+        } catch (err) {
+          console.error('Error updating record group:', err);
+          error.value = err.message;
+        }
+      }
+    };
+
     onMounted(async () => {
       await Promise.all([fetchGroups(), fetchRecords()]);
     });
@@ -523,6 +761,11 @@ export default {
       editGroup,
       updateGroup,
       deleteGroup,
+      editingRecord,
+      updatingRecord,
+      editRecord,
+      updateRecord,
+      onDragEnd,
     };
   },
 };
@@ -635,6 +878,12 @@ button:disabled {
   padding: 1rem;
   background-color: #f8f9fa;
   cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.group-header:hover {
+  background-color: #e9ecef;
 }
 
 .group-name {
@@ -653,6 +902,9 @@ button:disabled {
 
 .group-records {
   padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  margin-top: 0.5rem;
 }
 
 .modal {
@@ -698,5 +950,115 @@ button:disabled {
   text-align: center;
   padding: 2rem;
   color: #666;
+}
+
+.delete-button {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  color: white;
+}
+
+.group-delete-button {
+  background-color: #ff9800; /* Orange */
+}
+
+.record-delete-button {
+  background-color: #ffeb3b; /* Yellow */
+  color: #000; /* Black text for better contrast */
+}
+
+.delete-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.records-container {
+  min-height: 50px;
+  padding: 1rem;
+  background-color: #fff;
+  border-radius: 4px;
+  border: 1px dashed #ddd;
+}
+
+.record-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  transition: transform 0.2s;
+  cursor: move;
+}
+
+.record-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.record-card.sortable-ghost {
+  opacity: 0.5;
+  background: #e0e0e0;
+}
+
+.record-card.sortable-drag {
+  opacity: 0.5;
+  background: #e0e0e0;
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.record-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.record-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-label {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.detail-value {
+  font-weight: bold;
+}
+
+.pay-value {
+  color: #4caf50;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  width: 100%;
 }
 </style>

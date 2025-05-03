@@ -38,7 +38,7 @@ router.post('/', authenticate, async (req, res) => {
     const newOrder = (maxOrder?.maxOrder || 0) + 1;
 
     const result = await run(
-      'INSERT INTO groups (user_id, name, sort_order) VALUES (?, ?, ?)',
+      'INSERT INTO groups (user_id, name, sort_order, collapsed) VALUES (?, ?, ?, 0)',
       [req.userId, name, newOrder]
     );
 
@@ -46,6 +46,7 @@ router.post('/', authenticate, async (req, res) => {
       id: result.lastID,
       name,
       sort_order: newOrder,
+      collapsed: 0,
       record_count: 0,
     });
   } catch (error) {
@@ -58,7 +59,7 @@ router.post('/', authenticate, async (req, res) => {
 router.put('/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, sort_order } = req.body;
+    const { name, sort_order, collapsed } = req.body;
 
     // Verify the group belongs to the user
     const group = await get(
@@ -77,6 +78,13 @@ router.put('/:id', authenticate, async (req, res) => {
     if (sort_order !== undefined) {
       await run('UPDATE groups SET sort_order = ? WHERE id = ?', [
         sort_order,
+        id,
+      ]);
+    }
+
+    if (collapsed !== undefined) {
+      await run('UPDATE groups SET collapsed = ? WHERE id = ?', [
+        collapsed ? 1 : 0,
         id,
       ]);
     }

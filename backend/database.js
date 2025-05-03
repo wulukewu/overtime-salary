@@ -28,8 +28,8 @@ const initDatabase = async () => {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           user_id INTEGER NOT NULL,
           name TEXT NOT NULL,
-          sort_order INTEGER NOT NULL,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          sort_order INTEGER DEFAULT 0,
+          collapsed BOOLEAN DEFAULT 0,
           FOREIGN KEY (user_id) REFERENCES users(id)
         )
       `);

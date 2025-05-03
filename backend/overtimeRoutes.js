@@ -127,4 +127,74 @@ router.delete('/:id', authenticate, async (req, res) => {
   }
 });
 
+// Update an overtime record
+router.put('/:id', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+    const { date, salary, end_hour, minutes, group_id } = req.body;
+
+    // Validate required fields
+    if (!date || !salary || !end_hour || minutes === undefined) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate end_hour and minutes
+    if (end_hour < 19) {
+      return res.status(400).json({ error: 'End hour must be 19 or later' });
+    }
+    if (minutes < 0 || minutes > 59) {
+      return res
+        .status(400)
+        .json({ error: 'Minutes must be between 0 and 59' });
+    }
+
+    // Verify the record belongs to the user
+    const record = await get(
+      'SELECT * FROM overtime_records WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
+    if (!record) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+
+    // If group_id is provided, verify it belongs to the user
+    if (group_id) {
+      const group = await get(
+        'SELECT * FROM groups WHERE id = ? AND user_id = ?',
+        [group_id, userId]
+      );
+      if (!group) {
+        return res.status(400).json({ error: 'Invalid group' });
+      }
+    }
+
+    // Calculate new overtime pay
+    const calculated_pay = calculateOvertimePay(salary, end_hour, minutes);
+
+    // Update the record
+    await run(
+      `UPDATE overtime_records 
+       SET date = ?, salary = ?, end_hour = ?, minutes = ?, 
+           calculated_pay = ?, group_id = ?
+       WHERE id = ? AND user_id = ?`,
+      [date, salary, end_hour, minutes, calculated_pay, group_id, id, userId]
+    );
+
+    res.json({
+      id,
+      date,
+      salary,
+      end_hour,
+      minutes,
+      calculated_pay,
+      group_id,
+    });
+  } catch (error) {
+    console.error('Error updating record:', error);
+    res.status(500).json({ error: 'Failed to update record' });
+  }
+});
+
 module.exports = router;
