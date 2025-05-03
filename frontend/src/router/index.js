@@ -1,45 +1,43 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Settings from '../views/Settings.vue';
+import Home from '../views/Home.vue';
+import Dashboard from '../views/Dashboard.vue';
+import Login from '../views/Login.vue';
+import Register from '../views/Register.vue';
+import UserSettings from '../views/Settings.vue';
+import Profile from '../views/Profile.vue';
 
 const routes = [
   {
     path: '/',
-    name: 'HomePage',
-    component: () => import('../views/Home.vue'),
+    name: 'Home',
+    component: Home,
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: Dashboard,
     meta: { requiresAuth: true },
   },
   {
     path: '/login',
-    name: 'LoginPage',
-    component: () => import('../views/Login.vue'),
+    name: 'Login',
+    component: Login,
   },
   {
     path: '/register',
-    name: 'RegisterPage',
-    component: () => import('../views/Register.vue'),
-  },
-  {
-    path: '/dashboard',
-    name: 'OvertimeDashboard',
-    component: () => import('../views/Dashboard.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/admin',
-    name: 'AdminDashboard',
-    component: () => import('../views/Admin.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true },
-  },
-  {
-    path: '/profile',
-    name: 'UserProfile',
-    component: () => import('../views/Profile.vue'),
-    meta: { requiresAuth: true },
+    name: 'Register',
+    component: Register,
   },
   {
     path: '/settings',
     name: 'Settings',
-    component: Settings,
+    component: UserSettings,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: Profile,
     meta: { requiresAuth: true },
   },
 ];
@@ -51,13 +49,14 @@ const router = createRouter({
 
 // Navigation guard
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token');
-  const isAdmin = localStorage.getItem('isAdmin') === 'true';
+  const isAuthenticated = localStorage.getItem('token') !== null;
 
-  if (to.meta.requiresAuth && !token) {
-    next('/login');
-  } else if (to.meta.requiresAdmin && !isAdmin) {
-    next('/');
+  if (to.matched.some((record) => record.meta.requiresAuth)) {
+    if (!isAuthenticated) {
+      next({ name: 'Login' });
+    } else {
+      next();
+    }
   } else {
     next();
   }

@@ -135,57 +135,55 @@ router.post('/', authenticate, (req, res) => {
   );
 });
 
-// Calculate overtime pay without saving
-router.post('/calculate', authenticate, (req, res) => {
-  console.log('Received request body:', req.body);
-  console.log('Request headers:', req.headers);
-
+// Calculate overtime pay
+router.post('/calculate', (req, res) => {
   const { salary, end_hour, minutes } = req.body;
 
-  // Log each field separately
+  console.log('Received request body:', req.body);
   console.log('Parsed fields:', {
-    salary: {
-      value: salary,
-      type: typeof salary,
-      isNumber: !isNaN(Number(salary)),
-    },
-    end_hour: {
-      value: end_hour,
-      type: typeof end_hour,
-      isNumber: !isNaN(Number(end_hour)),
-    },
-    minutes: {
-      value: minutes,
-      type: typeof minutes,
-      isNumber: !isNaN(Number(minutes)),
-    },
+    salary: { value: salary, type: typeof salary },
+    end_hour: { value: end_hour, type: typeof end_hour },
+    minutes: { value: minutes, type: typeof minutes },
   });
 
-  // Check if fields exist and are valid numbers
-  if (salary === undefined || salary === null || isNaN(Number(salary))) {
-    return res.status(400).json({ error: 'Invalid salary' });
+  // Check for missing fields
+  if (salary === undefined || salary === null) {
+    return res.status(400).json({ error: 'Monthly salary is required' });
   }
-  if (end_hour === undefined || end_hour === null || isNaN(Number(end_hour))) {
-    return res.status(400).json({ error: 'Invalid end hour' });
+  if (end_hour === undefined || end_hour === null) {
+    return res.status(400).json({ error: 'End hour is required' });
   }
-  if (minutes === undefined || minutes === null || isNaN(Number(minutes))) {
-    return res.status(400).json({ error: 'Invalid minutes' });
+  if (minutes === undefined || minutes === null) {
+    return res.status(400).json({ error: 'Minutes are required' });
   }
 
-  // Convert to numbers
-  const numSalary = Number(salary);
-  const numEndHour = Number(end_hour);
-  const numMinutes = Number(minutes);
+  // Convert to numbers and validate
+  const salaryNum = Number(salary);
+  const endHourNum = Number(end_hour);
+  const minutesNum = Number(minutes);
 
-  console.log('Converted values:', {
-    salary: numSalary,
-    end_hour: numEndHour,
-    minutes: numMinutes,
+  if (isNaN(salaryNum) || salaryNum < 0) {
+    return res.status(400).json({ error: 'Invalid monthly salary' });
+  }
+  if (isNaN(endHourNum) || endHourNum < 19) {
+    return res.status(400).json({ error: 'End hour must be 19 or later' });
+  }
+  if (isNaN(minutesNum) || minutesNum < 0 || minutesNum > 59) {
+    return res.status(400).json({ error: 'Minutes must be between 0 and 59' });
+  }
+
+  // Calculate overtime pay
+  const hourlyRate = salaryNum / 30 / 8; // Assuming 8 hours per day
+  const overtimeHours = endHourNum - 19 + minutesNum / 60;
+  const overtimePay = hourlyRate * overtimeHours * 1.5; // 1.5x for overtime
+
+  console.log('Calculation result:', {
+    hourlyRate,
+    overtimeHours,
+    overtimePay,
   });
 
-  const result = calculateOvertimePay(numSalary, numEndHour, numMinutes);
-  console.log('Calculation result:', result);
-  res.json({ result });
+  res.json({ result: Math.round(overtimePay * 100) / 100 });
 });
 
 module.exports = router;
