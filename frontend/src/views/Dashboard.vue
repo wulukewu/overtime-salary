@@ -736,6 +736,22 @@ export default {
           throw new Error('Record not found');
         }
 
+        // Get all records in the target group
+        const targetGroupRecords = getGroupRecords(
+          toGroupId === 'null' ? 'ungrouped' : toGroupId
+        );
+
+        // Calculate the new sort order
+        let newSortOrder = evt.newIndex;
+        if (newSortOrder > 0) {
+          // If not the first item, use the previous item's sort order as base
+          const prevRecord = targetGroupRecords[newSortOrder - 1];
+          newSortOrder = (prevRecord.sort_order || 0) + 1;
+        } else {
+          // If it's the first item, use 0
+          newSortOrder = 0;
+        }
+
         // Update the record's group_id and sort_order in the database
         const response = await fetch(
           `http://localhost:3000/api/overtime/${recordId}`,
@@ -748,7 +764,7 @@ export default {
             body: JSON.stringify({
               ...record,
               group_id: toGroupId === 'null' ? null : parseInt(toGroupId),
-              sort_order: evt.newIndex,
+              sort_order: newSortOrder,
             }),
           }
         );

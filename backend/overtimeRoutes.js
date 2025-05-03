@@ -129,27 +129,25 @@ router.delete('/:id', authenticate, async (req, res) => {
 
 // Update an overtime record
 router.put('/:id', authenticate, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.userId;
-    const { date, salary, end_hour, minutes, group_id } = req.body;
+  const { id } = req.params;
+  const {
+    date,
+    salary,
+    end_hour,
+    minutes,
+    calculated_pay,
+    group_id,
+    sort_order,
+  } = req.body;
+  const userId = req.userId;
 
+  try {
     // Validate required fields
-    if (!date || !salary || !end_hour || minutes === undefined) {
+    if (!date || !salary || !end_hour || !minutes || !calculated_pay) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Validate end_hour and minutes
-    if (end_hour < 19) {
-      return res.status(400).json({ error: 'End hour must be 19 or later' });
-    }
-    if (minutes < 0 || minutes > 59) {
-      return res
-        .status(400)
-        .json({ error: 'Minutes must be between 0 and 59' });
-    }
-
-    // Verify the record belongs to the user
+    // Check if the record exists and belongs to the user
     const record = await get(
       'SELECT * FROM overtime_records WHERE id = ? AND user_id = ?',
       [id, userId]
@@ -159,38 +157,67 @@ router.put('/:id', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Record not found' });
     }
 
-    // If group_id is provided, verify it belongs to the user
-    if (group_id) {
+    // If group_id is provided, validate it belongs to the user
+    if (group_id !== undefined) {
       const group = await get(
         'SELECT * FROM groups WHERE id = ? AND user_id = ?',
         [group_id, userId]
       );
-      if (!group) {
+      if (!group && group_id !== null) {
         return res.status(400).json({ error: 'Invalid group' });
       }
     }
 
-    // Calculate new overtime pay
-    const calculated_pay = calculateOvertimePay(salary, end_hour, minutes);
+    // Start a transaction to handle the sort order update
+    await run('BEGIN TRANSACTION');
 
-    // Update the record
-    await run(
-      `UPDATE overtime_records 
-       SET date = ?, salary = ?, end_hour = ?, minutes = ?, 
-           calculated_pay = ?, group_id = ?
-       WHERE id = ? AND user_id = ?`,
-      [date, salary, end_hour, minutes, calculated_pay, group_id, id, userId]
-    );
+    try {
+      // If sort_order is provided, update the sort order for all records in the group
+      if (sort_order !== undefined) {
+        const currentGroupId =
+          group_id !== undefined ? group_id : record.group_id;
 
-    res.json({
-      id,
-      date,
-      salary,
-      end_hour,
-      minutes,
-      calculated_pay,
-      group_id,
-    });
+        // Get all records in the group
+        const groupRecords = await all(
+          'SELECT id, sort_order FROM overtime_records WHERE group_id = ? AND user_id = ? ORDER BY sort_order ASC',
+          [currentGroupId, userId]
+        );
+
+        // Update sort orders
+        for (let i = 0; i < groupRecords.length; i++) {
+          const recordId = groupRecords[i].id;
+          let newSortOrder = i;
+
+          // If this is the record being moved, use the provided sort_order
+          if (recordId === parseInt(id)) {
+            newSortOrder = sort_order;
+          } else if (i >= sort_order) {
+            // Shift other records down
+            newSortOrder = i + 1;
+          }
+
+          await run(
+            'UPDATE overtime_records SET sort_order = ? WHERE id = ? AND user_id = ?',
+            [newSortOrder, recordId, userId]
+          );
+        }
+      }
+
+      // Update the record
+      await run(
+        `UPDATE overtime_records 
+         SET date = ?, salary = ?, end_hour = ?, minutes = ?, 
+             calculated_pay = ?, group_id = ?
+         WHERE id = ? AND user_id = ?`,
+        [date, salary, end_hour, minutes, calculated_pay, group_id, id, userId]
+      );
+
+      await run('COMMIT');
+      res.json({ message: 'Record updated successfully' });
+    } catch (error) {
+      await run('ROLLBACK');
+      throw error;
+    }
   } catch (error) {
     console.error('Error updating record:', error);
     res.status(500).json({ error: 'Failed to update record' });
