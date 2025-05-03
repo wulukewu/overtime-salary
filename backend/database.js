@@ -37,8 +37,7 @@ const initDatabase = async () => {
       `);
 
       // Create overtime_records table
-      db.run(
-        `
+      db.run(`
         CREATE TABLE IF NOT EXISTS overtime_records (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           user_id INTEGER NOT NULL,
@@ -52,33 +51,42 @@ const initDatabase = async () => {
           FOREIGN KEY (user_id) REFERENCES users(id),
           FOREIGN KEY (group_id) REFERENCES groups(id)
         )
-      `,
-        async (err) => {
-          if (err) {
-            reject(err);
+      `);
+
+      // Check if database is empty
+      db.get('SELECT COUNT(*) as count FROM users', async (err, row) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        // If no users exist, create admin account
+        if (row.count === 0) {
+          try {
+            const hashedPassword = await bcrypt.hash('admin', SALT_ROUNDS);
+            await new Promise((resolve, reject) => {
+              db.run(
+                'INSERT INTO users (email, username, password, is_admin) VALUES (?, ?, ?, ?)',
+                ['admin@system.local', 'admin', hashedPassword, 1],
+                function (err) {
+                  if (err) reject(err);
+                  else resolve(this);
+                }
+              );
+            });
+            console.log('Admin user created with credentials:');
+            console.log('Email: admin@system.local');
+            console.log('Username: admin');
+            console.log('Password: admin');
+          } catch (error) {
+            console.error('Error creating admin user:', error);
+            reject(error);
             return;
           }
-
-          try {
-            // Create admin user if not exists
-            const adminCheck = await db.get(
-              'SELECT * FROM users WHERE is_admin = 1'
-            );
-            if (!adminCheck) {
-              const hashedPassword = await bcrypt.hash('admin', SALT_ROUNDS);
-              await db.run(
-                'INSERT INTO users (email, username, password, is_admin) VALUES (?, ?, ?, ?)',
-                ['admin@system.local', 'admin', hashedPassword, 1]
-              );
-              console.log('Admin user created');
-            }
-
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
         }
-      );
+
+        resolve();
+      });
     });
   });
 };
