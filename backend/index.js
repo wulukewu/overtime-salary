@@ -50,6 +50,11 @@ app.use('/api/users', userRoutes);
 app.use('/api/overtime', overtimeRoutes);
 app.use('/api/groups', groupRoutes);
 
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'API is running' });
+});
+
 // Simple overtime calculation endpoint (for testing)
 app.post('/api/calculate', (req, res) => {
   const { salary, endHour, minutes } = req.body;
