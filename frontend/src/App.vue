@@ -9,6 +9,9 @@
         <router-link to="/dashboard" v-if="isAuthenticated"
           >Dashboard</router-link
         >
+        <router-link to="/import-export" v-if="isAuthenticated"
+          >Import/Export</router-link
+        >
         <router-link to="/admin" v-if="isAdmin">Admin Panel</router-link>
       </div>
       <div class="nav-right">

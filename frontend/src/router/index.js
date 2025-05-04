@@ -6,6 +6,7 @@ import Register from '../views/Register.vue';
 import UserSettings from '../views/Settings.vue';
 import Profile from '../views/Profile.vue';
 import Admin from '../views/Admin.vue';
+import ImportExport from '../views/ImportExport.vue';
 
 const routes = [
   {
@@ -46,6 +47,12 @@ const routes = [
     name: 'Admin',
     component: Admin,
     meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/import-export',
+    name: 'ImportExport',
+    component: ImportExport,
+    meta: { requiresAuth: true },
   },
 ];
 
