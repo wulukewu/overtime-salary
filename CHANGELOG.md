@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/wulukewu/overtime-salary/compare/v1.0.1...v1.0.2) (2025-05-04)
+
+
+### Bug Fixes
+
+* Dockerfile of Frontend and Backend ([#6](https://github.com/wulukewu/overtime-salary/issues/6)) ([6f4cd0f](https://github.com/wulukewu/overtime-salary/commit/6f4cd0fc3a88f62d35dcd973031d9328a0858f41))
+
 ## [1.0.1](https://github.com/wulukewu/overtime-salary/compare/v1.0.0...v1.0.1) (2025-05-04)
 
 
