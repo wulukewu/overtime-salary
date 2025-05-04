@@ -1017,6 +1017,10 @@ button:disabled {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: background 0.2s;
+}
+.new-group-button:hover {
+  background-color: #357a38;
 }
 
 .groups-container {
@@ -1062,7 +1066,6 @@ button:disabled {
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  background-color: #e9ecef;
 }
 
 .group-actions button:hover {
@@ -1112,6 +1115,54 @@ button:disabled {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: background 0.2s;
+}
+.edit-button:hover {
+  background-color: #1769aa;
+}
+
+.save-button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.save-button:hover {
+  background-color: #357a38;
+}
+
+.cancel-button {
+  background-color: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cancel-button:hover {
+  background-color: #bdbdbd;
+}
+
+.group-delete-button {
+  background-color: #f44336;
+  color: white;
+  transition: background 0.2s;
+}
+.group-delete-button:hover {
+  background-color: #aa2e25;
+}
+
+.record-delete-button {
+  background-color: #ff9800;
+  color: white;
+  transition: background 0.2s;
+}
+.record-delete-button:hover {
+  background-color: #c66900;
 }
 
 .loading,
@@ -1128,15 +1179,6 @@ button:disabled {
   cursor: pointer;
   font-weight: bold;
   color: white;
-}
-
-.group-delete-button {
-  background-color: #ff9800; /* Orange */
-}
-
-.record-delete-button {
-  background-color: #ffeb3b; /* Yellow */
-  color: #000; /* Black text for better contrast */
 }
 
 .delete-button:disabled {
