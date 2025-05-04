@@ -1,9 +1,10 @@
-name: build-docker-image
+name: Deploy Docker Images
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 env:
   GHCR_REGISTRY: ghcr.io

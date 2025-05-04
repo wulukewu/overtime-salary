@@ -2,6 +2,7 @@ name: PR Docker Build
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
     branches: [main]
 
 env:
@@ -29,6 +30,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.PAT }}
 
+      - name: Debug - List existing packages
+        run: |
+          echo "Listing existing packages..."
+          gh api /user/packages | jq .
+
       - name: Extract metadata for Backend
         id: meta-backend
         uses: docker/metadata-action@v4
@@ -48,6 +54,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+          provenance: false
+          sbom: false
+
+      - name: Debug - Verify Backend package
+        run: |
+          echo "Verifying backend package..."
+          gh api /user/packages | jq .
 
       - name: Extract metadata for Frontend
         id: meta-frontend
@@ -68,3 +81,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+          provenance: false
+          sbom: false
+
+      - name: Debug - Verify Frontend package
+        run: |
+          echo "Verifying frontend package..."
+          gh api /user/packages | jq .
