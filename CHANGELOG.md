@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/wulukewu/overtime-salary/compare/v1.0.2...v1.0.3) (2025-05-04)
+
+
+### Bug Fixes
+
+* npm run ([#9](https://github.com/wulukewu/overtime-salary/issues/9)) ([74be8be](https://github.com/wulukewu/overtime-salary/commit/74be8be87ae9c3306c428bd8d0777d4c2da39ade))
+
 ## [1.0.2](https://github.com/wulukewu/overtime-salary/compare/v1.0.1...v1.0.2) (2025-05-04)
 
 
