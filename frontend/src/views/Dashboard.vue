@@ -94,7 +94,7 @@
                   :data-group-id="group.id"
                 >
                   <draggable
-                    :list="getGroupRecords(group.id)"
+                    :list="groupRecordRefs[group.id]"
                     group="records"
                     @end="onDragEnd"
                     item-key="id"
@@ -178,7 +178,7 @@
               data-group-id="null"
             >
               <draggable
-                :list="getGroupRecords('ungrouped')"
+                :list="groupRecordRefs['ungrouped']"
                 group="records"
                 @end="onDragEnd"
                 item-key="id"
@@ -358,7 +358,7 @@
 
 <script>
 /* eslint-disable vue/no-unused-vars */
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useStore } from 'vuex';
 import draggable from 'vuedraggable';
 import config from '../config';
@@ -388,6 +388,15 @@ export default {
     const collapsedGroups = ref([]);
     const editingRecord = ref(null);
     const updatingRecord = ref(false);
+
+    const groupRecordRefs = computed(() => {
+      const map = {};
+      groups.value.forEach((group) => {
+        map[group.id] = records.value.filter((r) => r.group_id === group.id);
+      });
+      map['ungrouped'] = records.value.filter((r) => !r.group_id);
+      return map;
+    });
 
     const getGroupRecords = (groupId) => {
       if (groupId === 'ungrouped') {
@@ -805,21 +814,8 @@ export default {
           throw new Error('Record not found');
         }
 
-        // Get all records in the target group
-        const targetGroupRecords = getGroupRecords(
-          toGroupId === 'null' ? 'ungrouped' : toGroupId
-        );
-
         // Calculate the new sort order
         let newSortOrder = evt.newIndex;
-        if (newSortOrder > 0) {
-          // If not the first item, use the previous item's sort order as base
-          const prevRecord = targetGroupRecords[newSortOrder - 1];
-          newSortOrder = ((prevRecord && prevRecord.sort_order) || 0) + 1;
-        } else {
-          // If it's the first item, use 0
-          newSortOrder = 0;
-        }
 
         const updateData = {
           ...record,
@@ -926,6 +922,7 @@ export default {
       updateRecord,
       onDragEnd,
       onGroupDragEnd,
+      groupRecordRefs,
     };
   },
 };

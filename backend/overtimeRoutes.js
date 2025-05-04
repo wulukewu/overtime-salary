@@ -13,7 +13,7 @@ router.get('/', authenticate, async (req, res) => {
        FROM overtime_records r 
        LEFT JOIN groups g ON r.group_id = g.id 
        WHERE r.user_id = ? 
-       ORDER BY r.date DESC`,
+       ORDER BY r.group_id, r.sort_order ASC, r.date DESC`,
       [userId]
     );
     res.json(records);
@@ -199,42 +199,23 @@ router.put('/:id', authenticate, async (req, res) => {
       if (sort_order !== undefined) {
         const currentGroupId =
           group_id !== undefined ? group_id : record.group_id;
-
-        console.log('Updating sort order:', {
-          currentGroupId,
-          sort_order,
-          recordId: id,
-        });
-
-        // Get all records in the group
+        // Get all records in the group, ordered by sort_order
         const groupRecords = await all(
-          'SELECT id, sort_order FROM overtime_records WHERE group_id = ? AND user_id = ? ORDER BY sort_order ASC',
+          'SELECT id FROM overtime_records WHERE group_id = ? AND user_id = ? ORDER BY sort_order ASC',
           [currentGroupId, userId]
         );
-
-        console.log('Group records:', groupRecords);
-
-        // Update sort orders
+        // Remove the moved record from the array
+        const movingIndex = groupRecords.findIndex(
+          (r) => r.id === parseInt(id)
+        );
+        const [movedRecord] = groupRecords.splice(movingIndex, 1);
+        // Insert it at the new index
+        groupRecords.splice(sort_order, 0, movedRecord);
+        // Update sort_order for all records in the group
         for (let i = 0; i < groupRecords.length; i++) {
-          const recordId = groupRecords[i].id;
-          let newSortOrder = i;
-
-          // If this is the record being moved, use the provided sort_order
-          if (recordId === parseInt(id)) {
-            newSortOrder = sort_order;
-          } else if (i >= sort_order) {
-            // Shift other records down
-            newSortOrder = i + 1;
-          }
-
-          console.log('Updating record sort order:', {
-            recordId,
-            newSortOrder,
-          });
-
           await run(
             'UPDATE overtime_records SET sort_order = ? WHERE id = ? AND user_id = ?',
-            [newSortOrder, recordId, userId]
+            [i, groupRecords[i].id, userId]
           );
         }
       }
