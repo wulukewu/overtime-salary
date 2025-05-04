@@ -275,12 +275,11 @@ router.get('/export-csv', authenticate, async (req, res) => {
     const csvWriter = createObjectCsvWriter({
       path: 'temp_export.csv',
       header: [
-        { id: 'date', title: 'Date' },
-        { id: 'salary', title: 'Salary' },
-        { id: 'end_hour', title: 'End Hour' },
-        { id: 'minutes', title: 'Minutes' },
-        { id: 'calculated_pay', title: 'Calculated Pay' },
-        { id: 'group_name', title: 'Group' },
+        { id: 'date', title: 'date' },
+        { id: 'salary', title: 'salary' },
+        { id: 'end_hour', title: 'end_hour' },
+        { id: 'minutes', title: 'minutes' },
+        { id: 'group_name', title: 'group' },
       ],
     });
 
