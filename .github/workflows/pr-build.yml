@@ -32,8 +32,8 @@ jobs:
         with:
           images: ${{ env.GHCR_REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=pr-${{ github.event.pull_request.number }},enable={{is_pr}}
-            type=raw,value=sha-${{ github.sha }},enable={{is_pr}}
+            type=raw,value=pr-${{ github.event.pull_request.number }}
+            type=raw,value=sha-${{ github.sha }}
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
