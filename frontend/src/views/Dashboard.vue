@@ -408,15 +408,59 @@ export default {
       );
     };
 
+    const fetchUngroupedCollapsed = async () => {
+      try {
+        const response = await fetch(
+          `${config.apiUrl}/api/groups/ungrouped-collapsed`,
+          {
+            headers: {
+              Authorization: `Bearer ${store.state.token}`,
+            },
+          }
+        );
+        if (!response.ok)
+          throw new Error('Failed to fetch ungrouped collapsed state');
+        const data = await response.json();
+        if (data.ungrouped_collapsed) {
+          if (!collapsedGroups.value.includes('ungrouped')) {
+            collapsedGroups.value.push('ungrouped');
+          }
+        } else {
+          collapsedGroups.value = collapsedGroups.value.filter(
+            (id) => id !== 'ungrouped'
+          );
+        }
+      } catch (err) {
+        console.error('Error fetching ungrouped collapsed state:', err);
+      }
+    };
+
+    const updateUngroupedCollapsed = async (collapsed) => {
+      try {
+        await fetch(`${config.apiUrl}/api/groups/ungrouped-collapsed`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${store.state.token}`,
+          },
+          body: JSON.stringify({ collapsed }),
+        });
+      } catch (err) {
+        console.error('Error updating ungrouped collapsed state:', err);
+      }
+    };
+
     const toggleGroup = async (group) => {
-      // Handle ungrouped group (no DB update, just local state)
+      // Handle ungrouped group (persist state in DB)
       if (group === 'ungrouped' || group.id === undefined) {
         const idx = collapsedGroups.value.indexOf('ungrouped');
-        if (idx === -1) {
+        const newCollapsed = idx === -1;
+        if (newCollapsed) {
           collapsedGroups.value.push('ungrouped');
         } else {
           collapsedGroups.value.splice(idx, 1);
         }
+        await updateUngroupedCollapsed(newCollapsed);
         return;
       }
       try {
@@ -844,6 +888,7 @@ export default {
 
     onMounted(async () => {
       await Promise.all([fetchGroups(), fetchRecords()]);
+      await fetchUngroupedCollapsed();
     });
 
     return {
