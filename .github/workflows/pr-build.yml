@@ -2,6 +2,7 @@ name: PR Docker Build
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
     branches: [main]
 
 env:
@@ -14,10 +15,21 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Set up GitHub CLI
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Install GitHub CLI
+        run: |
+          wget -q https://github.com/cli/cli/releases/download/v2.45.0/gh_2.45.0_linux_amd64.deb
+          sudo dpkg -i gh_2.45.0_linux_amd64.deb
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -28,6 +40,11 @@ jobs:
           registry: ${{ env.GHCR_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.PAT }}
+
+      - name: Debug - List existing packages
+        run: |
+          echo "Listing existing packages..."
+          gh api /user/packages | jq .
 
       - name: Extract metadata for Backend
         id: meta-backend
@@ -48,6 +65,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+          provenance: false
+          sbom: false
+
+      - name: Debug - Verify Backend package
+        run: |
+          echo "Verifying backend package..."
+          gh api /user/packages | jq .
 
       - name: Extract metadata for Frontend
         id: meta-frontend
@@ -68,3 +92,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+          provenance: false
+          sbom: false
+
+      - name: Debug - Verify Frontend package
+        run: |
+          echo "Verifying frontend package..."
+          gh api /user/packages | jq .
