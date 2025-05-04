@@ -311,89 +311,129 @@ router.post(
 
     const results = [];
     const errors = [];
+    let records = [];
 
-    fs.createReadStream(req.file.path)
-      .pipe(csv.parse({ columns: true, trim: true }))
-      .on('data', async (data) => {
-        try {
-          // Validate required fields
-          if (
-            !data.date ||
-            !data.salary ||
-            !data.end_hour ||
-            data.minutes === undefined
-          ) {
-            errors.push({ row: data, error: 'Missing required fields' });
-            return;
+    // First, read all records into memory
+    await new Promise((resolve, reject) => {
+      fs.createReadStream(req.file.path)
+        .pipe(
+          csv.parse({
+            columns: true,
+            trim: true,
+            skip_empty_lines: true,
+            // Convert column names to lowercase and replace spaces with underscores
+            columns: (headers) =>
+              headers.map((header) =>
+                header.toLowerCase().replace(/\s+/g, '_')
+              ),
+          })
+        )
+        .on('data', (data) => {
+          records.push(data);
+        })
+        .on('end', () => {
+          resolve();
+        })
+        .on('error', (error) => {
+          reject(error);
+        });
+    });
+
+    console.log('Parsed records:', records);
+
+    // Process each record
+    for (const data of records) {
+      try {
+        console.log('Processing record:', data);
+
+        // Validate required fields
+        if (
+          !data.date ||
+          !data.salary ||
+          !data.end_hour ||
+          data.minutes === undefined
+        ) {
+          errors.push({
+            row: data,
+            error:
+              'Missing required fields. Required: date, salary, end_hour, minutes',
+          });
+          continue;
+        }
+
+        // Validate data types and ranges
+        const salary = parseFloat(data.salary);
+        const endHour = parseInt(data.end_hour);
+        const minutes = parseInt(data.minutes);
+
+        console.log('Parsed values:', { salary, endHour, minutes });
+
+        if (isNaN(salary) || salary <= 0) {
+          errors.push({ row: data, error: 'Invalid salary value' });
+          continue;
+        }
+
+        if (isNaN(endHour) || endHour < 19) {
+          errors.push({ row: data, error: 'End hour must be 19 or later' });
+          continue;
+        }
+
+        if (isNaN(minutes) || minutes < 0 || minutes > 59) {
+          errors.push({ row: data, error: 'Minutes must be between 0 and 59' });
+          continue;
+        }
+
+        // Calculate overtime pay
+        const calculatedPay = calculateOvertimePay(salary, endHour, minutes);
+
+        // Handle group if provided
+        let groupId = null;
+        if (data.group && data.group.trim()) {
+          const group = await get(
+            'SELECT id FROM groups WHERE name = ? AND user_id = ?',
+            [data.group.trim(), req.userId]
+          );
+          if (group) {
+            groupId = group.id;
+          } else {
+            // Create new group if it doesn't exist
+            const result = await run(
+              'INSERT INTO groups (user_id, name) VALUES (?, ?)',
+              [req.userId, data.group.trim()]
+            );
+            groupId = result.lastID;
           }
+        }
 
-          // Validate data types
-          const salary = parseFloat(data.salary);
-          const endHour = parseInt(data.end_hour);
-          const minutes = parseInt(data.minutes);
-
-          if (isNaN(salary) || isNaN(endHour) || isNaN(minutes)) {
-            errors.push({ row: data, error: 'Invalid numeric values' });
-            return;
-          }
-
-          // Calculate overtime pay
-          const calculatedPay = calculateOvertimePay(
+        // Insert record into database
+        const result = await run(
+          'INSERT INTO overtime_records (user_id, date, salary, end_hour, minutes, calculated_pay, group_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [
+            req.userId,
+            data.date,
             salary,
             endHour,
-            minutes
-          ).result;
+            minutes,
+            calculatedPay,
+            groupId,
+          ]
+        );
+        results.push(result);
+        console.log('Successfully imported record:', data);
+      } catch (error) {
+        console.error('Error processing record:', error);
+        errors.push({ row: data, error: error.message });
+      }
+    }
 
-          // Handle group if provided
-          let groupId = null;
-          if (data.group) {
-            const group = await get(
-              'SELECT id FROM groups WHERE name = ? AND user_id = ?',
-              [data.group, req.userId]
-            );
-            if (group) {
-              groupId = group.id;
-            } else {
-              // Create new group if it doesn't exist
-              const result = await run(
-                'INSERT INTO groups (user_id, name) VALUES (?, ?)',
-                [req.userId, data.group]
-              );
-              groupId = result.lastID;
-            }
-          }
+    // Clean up the uploaded file
+    fs.unlinkSync(req.file.path);
 
-          // Insert record into database
-          const result = await run(
-            'INSERT INTO overtime_records (user_id, date, salary, end_hour, minutes, calculated_pay, group_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [
-              req.userId,
-              data.date,
-              salary,
-              endHour,
-              minutes,
-              calculatedPay,
-              groupId,
-            ]
-          );
-          results.push(result);
-        } catch (error) {
-          errors.push({ row: data, error: error.message });
-        }
-      })
-      .on('end', () => {
-        // Clean up the uploaded file
-        fs.unlinkSync(req.file.path);
-        res.json({
-          success: true,
-          imported: results.length,
-          errors: errors,
-        });
-      })
-      .on('error', (error) => {
-        fs.unlinkSync(req.file.path);
-        res.status(500).json({ error: 'Failed to process CSV file' });
-      });
+    res.json({
+      success: true,
+      imported: results.length,
+      errors: errors,
+    });
   }
 );
 
