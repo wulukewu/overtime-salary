@@ -6,6 +6,7 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - ./backend/data:/app/data
     environment:
       - NODE_ENV=development
     networks:

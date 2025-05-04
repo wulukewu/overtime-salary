@@ -3,7 +3,13 @@ const fs = require('fs');
 const bcrypt = require('bcrypt');
 const path = require('path');
 
-const DB_FILE = './database.sqlite';
+// Create data directory if it doesn't exist
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const DB_FILE = path.join(dataDir, 'database.sqlite');
 const SALT_ROUNDS = 10;
 
 // Create database instance
