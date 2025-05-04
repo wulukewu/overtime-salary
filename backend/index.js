@@ -73,6 +73,12 @@ app.post('/api/calculate', (req, res) => {
   res.json({ result });
 });
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
 // Initialize database and start server
 initDatabase()
   .then(() => {
