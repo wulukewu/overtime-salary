@@ -189,4 +189,36 @@ router.delete('/:id', authenticate, async (req, res) => {
   }
 });
 
+// Get ungrouped collapsed state for the authenticated user
+router.get('/ungrouped-collapsed', authenticate, async (req, res) => {
+  try {
+    const user = await get(
+      'SELECT ungrouped_collapsed FROM users WHERE id = ?',
+      [req.userId]
+    );
+    res.json({ ungrouped_collapsed: !!user.ungrouped_collapsed });
+  } catch (error) {
+    console.error('Error fetching ungrouped collapsed state:', error);
+    res.status(500).json({ error: 'Error fetching ungrouped collapsed state' });
+  }
+});
+
+// Update ungrouped collapsed state for the authenticated user
+router.put('/ungrouped-collapsed', authenticate, async (req, res) => {
+  const { collapsed } = req.body;
+  if (collapsed === undefined) {
+    return res.status(400).json({ error: 'Collapsed state is required' });
+  }
+  try {
+    await run('UPDATE users SET ungrouped_collapsed = ? WHERE id = ?', [
+      collapsed ? 1 : 0,
+      req.userId,
+    ]);
+    res.json({ message: 'Ungrouped collapsed state updated successfully' });
+  } catch (error) {
+    console.error('Error updating ungrouped collapsed state:', error);
+    res.status(500).json({ error: 'Error updating ungrouped collapsed state' });
+  }
+});
+
 module.exports = router;

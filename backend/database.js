@@ -28,7 +28,8 @@ const initDatabase = async () => {
           monthly_salary REAL DEFAULT 0,
           is_admin BOOLEAN DEFAULT 0,
           force_password_change INTEGER DEFAULT 0,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          ungrouped_collapsed BOOLEAN DEFAULT 0
         )
       `);
 

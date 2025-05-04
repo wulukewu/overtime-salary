@@ -164,7 +164,7 @@
           </draggable>
           <!-- Ungrouped records -->
           <div class="group-item">
-            <div class="group-header" @click="toggleGroup('ungrouped')">
+            <div class="group-header" @click="toggleGroup({ id: undefined })">
               <div class="group-name">
                 Ungrouped
                 <span class="group-total">
@@ -409,6 +409,16 @@ export default {
     };
 
     const toggleGroup = async (group) => {
+      // Handle ungrouped group (no DB update, just local state)
+      if (group === 'ungrouped' || group.id === undefined) {
+        const idx = collapsedGroups.value.indexOf('ungrouped');
+        if (idx === -1) {
+          collapsedGroups.value.push('ungrouped');
+        } else {
+          collapsedGroups.value.splice(idx, 1);
+        }
+        return;
+      }
       try {
         const response = await fetch(
           `${config.apiUrl}/api/groups/${group.id}`,
