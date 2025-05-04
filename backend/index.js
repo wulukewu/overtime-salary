@@ -31,7 +31,9 @@ app.use((req, res, next) => {
 // Configure CORS
 app.use(
   cors({
-    origin: '*', // Allow all origins in development
+    origin: process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',')
+      : '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
