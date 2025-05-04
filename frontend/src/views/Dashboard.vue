@@ -815,7 +815,7 @@ export default {
         if (newSortOrder > 0) {
           // If not the first item, use the previous item's sort order as base
           const prevRecord = targetGroupRecords[newSortOrder - 1];
-          newSortOrder = (prevRecord.sort_order || 0) + 1;
+          newSortOrder = ((prevRecord && prevRecord.sort_order) || 0) + 1;
         } else {
           // If it's the first item, use 0
           newSortOrder = 0;
