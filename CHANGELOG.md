@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.5](https://github.com/wulukewu/overtime-salary/compare/v1.0.4...v1.0.5) (2025-05-04)
+
+
+### Bug Fixes
+
+* drag sorting ([#13](https://github.com/wulukewu/overtime-salary/issues/13)) ([beb3f34](https://github.com/wulukewu/overtime-salary/commit/beb3f34cf037937695a8c0a93ffc277e3f40a6f5))
+
 ## [1.0.4](https://github.com/wulukewu/overtime-salary/compare/v1.0.3...v1.0.4) (2025-05-04)
 
 
