@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/wulukewu/overtime-salary/compare/v1.0.5...v1.1.0) (2025-05-04)
+
+
+### Features
+
+* create import and export panel ([#15](https://github.com/wulukewu/overtime-salary/issues/15)) ([942c1af](https://github.com/wulukewu/overtime-salary/commit/942c1af1f125208831c3f046f1a07617a0e21163))
+
 ## [1.0.5](https://github.com/wulukewu/overtime-salary/compare/v1.0.4...v1.0.5) (2025-05-04)
 
 
