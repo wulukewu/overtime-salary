@@ -31,12 +31,19 @@ app.use((req, res, next) => {
 // Configure CORS
 app.use(
   cors({
-    origin: true, // Allow all origins
-    credentials: true, // Allow credentials
+    origin: process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',')
+      : '*',
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   })
 );
+
+// Handle OPTIONS requests explicitly
+app.options('*', cors());
 
 app.use(bodyParser.json());
 
@@ -44,6 +51,11 @@ app.use(bodyParser.json());
 app.use('/api/users', userRoutes);
 app.use('/api/overtime', overtimeRoutes);
 app.use('/api/groups', groupRoutes);
+
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'API is running' });
+});
 
 // Simple overtime calculation endpoint (for testing)
 app.post('/api/calculate', (req, res) => {

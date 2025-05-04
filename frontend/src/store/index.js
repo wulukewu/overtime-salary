@@ -1,4 +1,5 @@
 import { createStore } from 'vuex';
+import config from '../config';
 
 export default createStore({
   state: {
@@ -44,8 +45,7 @@ export default createStore({
   actions: {
     async login({ commit }, credentials) {
       try {
-        console.log('Attempting login with credentials:', credentials);
-        const response = await fetch('http://localhost:3000/api/users/login', {
+        const response = await fetch(`${config.apiUrl}/api/users/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -54,47 +54,29 @@ export default createStore({
         });
 
         const data = await response.json();
-        console.log('Login response:', data);
-
         if (response.ok) {
-          console.log('Login successful, storing token:', data.token);
           commit('setToken', data.token);
-          // Fetch user profile after successful login
-          const profileResponse = await fetch(
-            'http://localhost:3000/api/users/profile',
-            {
-              headers: {
-                Authorization: `Bearer ${data.token}`,
-              },
-            }
-          );
-          const profileData = await profileResponse.json();
-          if (profileResponse.ok) {
-            commit('setUser', profileData);
-            commit('setAdmin', profileData.is_admin || false);
+          if (data.user) {
+            commit('setUser', data.user);
+            commit('setAdmin', data.user.is_admin || false);
           }
           return { success: true };
         } else {
-          console.log('Login failed:', data.error);
           return { success: false, error: data.error };
         }
       } catch (error) {
-        console.error('Login error:', error);
         return { success: false, error: 'Network error' };
       }
     },
     async register({ commit }, userData) {
       try {
-        const response = await fetch(
-          'http://localhost:3000/api/users/register',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData),
-          }
-        );
+        const response = await fetch(`${config.apiUrl}/api/users/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData),
+        });
 
         const data = await response.json();
         if (response.ok) {

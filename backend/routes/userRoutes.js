@@ -107,15 +107,18 @@ router.post('/login', async (req, res) => {
         username: user.username,
         isAdmin: user.is_admin,
       },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'your-secret-jwt-key',
       { expiresIn: '24h' }
     );
 
     console.log('Login successful for user:', login);
     res.json({ token, username: user.username });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Login error details:', error);
+    console.error('Error stack:', error.stack);
+    res
+      .status(500)
+      .json({ error: 'Internal server error', details: error.message });
   }
 });
 
