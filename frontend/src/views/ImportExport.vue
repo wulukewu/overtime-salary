@@ -24,13 +24,15 @@
       </p>
 
       <div class="import-section">
-        <input
-          type="file"
-          accept=".csv"
-          @change="handleFileUpload"
-          ref="fileInput"
-          class="file-input"
-        />
+        <label class="file-input">
+          <span class="file-input-text">Choose File</span>
+          <input
+            type="file"
+            accept=".csv"
+            @change="handleFileUpload"
+            ref="fileInput"
+          />
+        </label>
         <button
           @click="importRecords"
           class="btn btn-primary"
@@ -206,50 +208,108 @@ h2 {
   margin-bottom: 15px;
 }
 
-.note {
+p {
   color: #666;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.note {
   font-size: 0.9em;
-  margin: 10px 0;
+  color: #666;
+  font-style: italic;
 }
 
 .btn {
-  padding: 10px 20px;
+  height: 42px;
+  padding: 0 20px;
+  min-width: 120px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.3s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .btn-primary {
-  background-color: #42b983;
+  background-color: #4caf50;
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #3aa876;
+  background-color: #45a049;
 }
 
-.btn-secondary {
-  background-color: #6c757d;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background-color: #5a6268;
-}
-
-.btn:disabled {
+.btn-primary:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
 }
 
+.btn-secondary {
+  background-color: #2196f3;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #1976d2;
+}
+
 .import-section {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: center;
   margin: 20px 0;
+  padding: 0 20px;
 }
 
 .file-input {
-  margin-bottom: 15px;
+  position: relative;
+  display: inline-block;
+  height: 42px;
+  min-width: 120px;
+}
+
+.file-input input[type='file'] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.file-input-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  padding: 0 20px;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #666;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-sizing: border-box;
+  width: 100%;
+  text-align: center;
+}
+
+.file-input:hover .file-input-text {
+  background-color: #e9ecef;
+  border-color: #ccc;
+}
+
+.file-input input[type='file']:focus + .file-input-text {
+  outline: 2px solid #4caf50;
+  outline-offset: 2px;
 }
 
 .import-result {
@@ -264,19 +324,14 @@ h2 {
   margin-bottom: 10px;
 }
 
-.import-result ul {
-  list-style-type: none;
-  padding-left: 0;
-}
-
-.import-result li {
+.import-result h4 {
   color: #dc3545;
-  margin-bottom: 15px;
+  margin: 15px 0 10px;
 }
 
 .error-row {
-  margin-top: 5px;
-  padding: 8px;
+  margin: 10px 0;
+  padding: 10px;
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -284,8 +339,9 @@ h2 {
 
 .error-row pre {
   margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
   font-size: 0.9em;
   color: #666;
-  white-space: pre-wrap;
 }
 </style>
