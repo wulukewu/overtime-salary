@@ -31,14 +31,17 @@ app.use((req, res, next) => {
 // Configure CORS
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGINS
-      ? process.env.ALLOWED_ORIGINS.split(',')
-      : true,
+    origin: '*', // Allow all origins in development
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   })
 );
+
+// Handle OPTIONS requests explicitly
+app.options('*', cors());
 
 app.use(bodyParser.json());
 
