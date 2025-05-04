@@ -21,7 +21,7 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-      - VUE_APP_API_URL=http://backend:3000
+      - VUE_APP_API_URL=${API_URL:-http://localhost:3000}
     networks:
       - app-network
     depends_on:
