@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/wulukewu/overtime-salary/compare/v1.0.0...v1.0.1) (2025-05-04)
+
+
+### Bug Fixes
+
+* Docker Build to Packages ([#4](https://github.com/wulukewu/overtime-salary/issues/4)) ([bf92857](https://github.com/wulukewu/overtime-salary/commit/bf92857d46d02b1c5cf2d4d59a75ca94c32bb537))
+
 ## 1.0.0 (2025-05-04)
 
 
