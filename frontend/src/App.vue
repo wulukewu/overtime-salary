@@ -2,6 +2,9 @@
   <div id="app">
     <nav>
       <div class="nav-left">
+        <router-link to="/" exact-active-class="no-active-style">
+          <img src="@/assets/logo.png" alt="Logo" class="logo" />
+        </router-link>
         <router-link to="/">Home</router-link>
         <router-link to="/dashboard" v-if="isAuthenticated"
           >Dashboard</router-link
@@ -105,7 +108,7 @@ export default {
 }
 
 nav {
-  padding: 30px;
+  padding: 12px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -182,5 +185,22 @@ nav a.router-link-exact-active {
 .dropdown-menu a:last-child {
   border-top: 1px solid #e9ecef;
   color: #dc3545;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo {
+  height: 44px;
+  margin-right: 0;
+  display: block;
+}
+
+.no-active-style {
+  background: none !important;
+  color: inherit !important;
 }
 </style>

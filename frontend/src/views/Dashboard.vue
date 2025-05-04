@@ -164,7 +164,7 @@
           </draggable>
           <!-- Ungrouped records -->
           <div class="group-item">
-            <div class="group-header" @click="toggleGroup('ungrouped')">
+            <div class="group-header" @click="toggleGroup({ id: undefined })">
               <div class="group-name">
                 Ungrouped
                 <span class="group-total">
@@ -408,7 +408,61 @@ export default {
       );
     };
 
+    const fetchUngroupedCollapsed = async () => {
+      try {
+        const response = await fetch(
+          `${config.apiUrl}/api/groups/ungrouped-collapsed`,
+          {
+            headers: {
+              Authorization: `Bearer ${store.state.token}`,
+            },
+          }
+        );
+        if (!response.ok)
+          throw new Error('Failed to fetch ungrouped collapsed state');
+        const data = await response.json();
+        if (data.ungrouped_collapsed) {
+          if (!collapsedGroups.value.includes('ungrouped')) {
+            collapsedGroups.value.push('ungrouped');
+          }
+        } else {
+          collapsedGroups.value = collapsedGroups.value.filter(
+            (id) => id !== 'ungrouped'
+          );
+        }
+      } catch (err) {
+        console.error('Error fetching ungrouped collapsed state:', err);
+      }
+    };
+
+    const updateUngroupedCollapsed = async (collapsed) => {
+      try {
+        await fetch(`${config.apiUrl}/api/groups/ungrouped-collapsed`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${store.state.token}`,
+          },
+          body: JSON.stringify({ collapsed }),
+        });
+      } catch (err) {
+        console.error('Error updating ungrouped collapsed state:', err);
+      }
+    };
+
     const toggleGroup = async (group) => {
+      // Handle ungrouped group (persist state in DB)
+      if (group === 'ungrouped' || group.id === undefined) {
+        const idx = collapsedGroups.value.indexOf('ungrouped');
+        const newCollapsed = idx === -1;
+        if (newCollapsed) {
+          collapsedGroups.value.push('ungrouped');
+        } else {
+          collapsedGroups.value.splice(idx, 1);
+        }
+        await updateUngroupedCollapsed(newCollapsed);
+        return;
+      }
       try {
         const response = await fetch(
           `${config.apiUrl}/api/groups/${group.id}`,
@@ -834,6 +888,7 @@ export default {
 
     onMounted(async () => {
       await Promise.all([fetchGroups(), fetchRecords()]);
+      await fetchUngroupedCollapsed();
     });
 
     return {
@@ -962,6 +1017,10 @@ button:disabled {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: background 0.2s;
+}
+.new-group-button:hover {
+  background-color: #357a38;
 }
 
 .groups-container {
@@ -1007,7 +1066,6 @@ button:disabled {
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  background-color: #e9ecef;
 }
 
 .group-actions button:hover {
@@ -1057,6 +1115,54 @@ button:disabled {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: background 0.2s;
+}
+.edit-button:hover {
+  background-color: #1769aa;
+}
+
+.save-button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.save-button:hover {
+  background-color: #357a38;
+}
+
+.cancel-button {
+  background-color: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cancel-button:hover {
+  background-color: #bdbdbd;
+}
+
+.group-delete-button {
+  background-color: #f44336;
+  color: white;
+  transition: background 0.2s;
+}
+.group-delete-button:hover {
+  background-color: #aa2e25;
+}
+
+.record-delete-button {
+  background-color: #ff9800;
+  color: white;
+  transition: background 0.2s;
+}
+.record-delete-button:hover {
+  background-color: #c66900;
 }
 
 .loading,
@@ -1073,15 +1179,6 @@ button:disabled {
   cursor: pointer;
   font-weight: bold;
   color: white;
-}
-
-.group-delete-button {
-  background-color: #ff9800; /* Orange */
-}
-
-.record-delete-button {
-  background-color: #ffeb3b; /* Yellow */
-  color: #000; /* Black text for better contrast */
 }
 
 .delete-button:disabled {
