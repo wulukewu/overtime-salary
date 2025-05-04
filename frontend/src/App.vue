@@ -194,7 +194,7 @@ nav a.router-link-exact-active {
 }
 
 .logo {
-  height: 32px;
+  height: 44px;
   margin-right: 0;
   display: block;
 }
