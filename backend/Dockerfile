@@ -14,6 +14,9 @@ RUN apk add --no-cache \
 COPY package*.json ./
 RUN npm install --build-from-source --sqlite=/usr/local
 
+# Copy application code
+COPY . .
+
 EXPOSE 3000
 
 CMD ["npm", "start"] 
