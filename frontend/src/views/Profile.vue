@@ -109,8 +109,7 @@ export default {
               Authorization: `Bearer ${store.state.token}`,
             },
             body: JSON.stringify({
-              email: email.value,
-              username: username.value,
+              name: name.value,
             }),
           }
         );
