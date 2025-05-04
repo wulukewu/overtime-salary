@@ -1,5 +1,14 @@
 # Overtime Salary Calculator
 
+<p align="center">
+  <img src="frontend/src/assets/logo.png" alt="Overtime Salary Calculator Logo" width="200"/>
+</p>
+
+![Overtime Calculator](https://img.shields.io/badge/Overtime-Calculator-blue)
+![Vue.js](https://img.shields.io/badge/Vue.js-3-4FC08D?logo=vue.js)
+![Node.js](https://img.shields.io/badge/Node.js-18-339933?logo=node.js)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+
 A full-stack web application for calculating and managing overtime pay. This application helps users track their overtime hours and automatically calculates their overtime compensation based on their monthly salary.
 
 ## Features
@@ -137,7 +146,7 @@ The backend provides the following main endpoints:
 
 ## License
 
-This project is licensed under the ISC License.
+This project is licensed under the MIT License.
 
 ## Security
 
