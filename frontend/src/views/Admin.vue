@@ -107,6 +107,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
+import config from '../config';
 
 export default {
   name: 'AdminDashboard',
@@ -167,7 +168,7 @@ export default {
 
       try {
         const response = await fetch(
-          `http://localhost:3000/api/users/users/${selectedUser.value.id}/set-password`,
+          `${config.apiUrl}/api/users/users/${selectedUser.value.id}/set-password`,
           {
             method: 'POST',
             headers: {
@@ -194,7 +195,7 @@ export default {
       loading.value = true;
       error.value = '';
       try {
-        const response = await fetch('http://localhost:3000/api/users/users', {
+        const response = await fetch(`${config.apiUrl}/api/users/users`, {
           headers: {
             Authorization: `Bearer ${store.state.token}`,
           },
@@ -216,7 +217,7 @@ export default {
     const toggleUserRole = async (user) => {
       try {
         const response = await fetch(
-          `http://localhost:3000/api/users/users/${user.id}/role`,
+          `${config.apiUrl}/api/users/users/${user.id}/role`,
           {
             method: 'PUT',
             headers: {
@@ -238,7 +239,7 @@ export default {
       resettingPassword.value = userId;
       try {
         const response = await fetch(
-          `http://localhost:3000/api/users/users/${userId}/reset-password`,
+          `${config.apiUrl}/api/users/users/${userId}/reset-password`,
           {
             method: 'POST',
             headers: {
@@ -267,7 +268,7 @@ export default {
       deletingUser.value = userId;
       try {
         const response = await fetch(
-          `http://localhost:3000/api/users/users/${userId}`,
+          `${config.apiUrl}/api/users/users/${userId}`,
           {
             method: 'DELETE',
             headers: {

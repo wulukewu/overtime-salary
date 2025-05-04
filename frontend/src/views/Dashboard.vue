@@ -361,6 +361,7 @@
 import { ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import draggable from 'vuedraggable';
+import config from '../config';
 
 export default {
   name: 'OvertimeDashboard',
@@ -410,7 +411,7 @@ export default {
     const toggleGroup = async (group) => {
       try {
         const response = await fetch(
-          `http://localhost:3000/api/groups/${group.id}`,
+          `${config.apiUrl}/api/groups/${group.id}`,
           {
             method: 'PUT',
             headers: {
@@ -438,7 +439,7 @@ export default {
     const createGroup = async () => {
       creatingGroup.value = true;
       try {
-        const response = await fetch('http://localhost:3000/api/groups', {
+        const response = await fetch(`${config.apiUrl}/api/groups`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -469,7 +470,7 @@ export default {
       updatingGroup.value = true;
       try {
         const response = await fetch(
-          `http://localhost:3000/api/groups/${editingGroup.value.id}`,
+          `${config.apiUrl}/api/groups/${editingGroup.value.id}`,
           {
             method: 'PUT',
             headers: {
@@ -495,15 +496,12 @@ export default {
 
     const deleteGroup = async (groupId) => {
       try {
-        const response = await fetch(
-          `http://localhost:3000/api/groups/${groupId}`,
-          {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${store.state.token}`,
-            },
-          }
-        );
+        const response = await fetch(`${config.apiUrl}/api/groups/${groupId}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${store.state.token}`,
+          },
+        });
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to delete group');
@@ -518,7 +516,7 @@ export default {
 
     const fetchGroups = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/groups', {
+        const response = await fetch(`${config.apiUrl}/api/groups`, {
           headers: {
             Authorization: `Bearer ${store.state.token}`,
           },
@@ -571,7 +569,7 @@ export default {
         console.log('Token:', store.state.token);
 
         const response = await fetch(
-          'http://localhost:3000/api/overtime/calculate',
+          `${config.apiUrl}/api/overtime/calculate`,
           {
             method: 'POST',
             headers: {
@@ -603,7 +601,7 @@ export default {
       saving.value = true;
       try {
         const currentDate = new Date().toISOString().split('T')[0];
-        const response = await fetch('http://localhost:3000/api/overtime/', {
+        const response = await fetch(`${config.apiUrl}/api/overtime/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -642,7 +640,7 @@ export default {
         if (!token) {
           throw new Error('No authentication token found');
         }
-        const response = await fetch('http://localhost:3000/api/overtime', {
+        const response = await fetch(`${config.apiUrl}/api/overtime`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -666,7 +664,7 @@ export default {
       deletingId.value = recordId;
       try {
         const response = await fetch(
-          `http://localhost:3000/api/overtime/${recordId}`,
+          `${config.apiUrl}/api/overtime/${recordId}`,
           {
             method: 'DELETE',
             headers: {
@@ -699,7 +697,7 @@ export default {
       updatingRecord.value = true;
       try {
         const response = await fetch(
-          `http://localhost:3000/api/overtime/${editingRecord.value.id}`,
+          `${config.apiUrl}/api/overtime/${editingRecord.value.id}`,
           {
             method: 'PUT',
             headers: {
@@ -779,7 +777,7 @@ export default {
 
         // Update the record's group_id and sort_order in the database
         const response = await fetch(
-          `http://localhost:3000/api/overtime/${recordId}`,
+          `${config.apiUrl}/api/overtime/${recordId}`,
           {
             method: 'PUT',
             headers: {
@@ -813,7 +811,7 @@ export default {
 
       try {
         const response = await fetch(
-          `http://localhost:3000/api/groups/${group.id}/sort`,
+          `${config.apiUrl}/api/groups/${group.id}/sort`,
           {
             method: 'PUT',
             headers: {

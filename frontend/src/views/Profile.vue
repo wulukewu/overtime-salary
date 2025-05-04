@@ -75,6 +75,7 @@
 import { ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import config from '../config';
 
 export default {
   name: 'UserProfile',
@@ -100,14 +101,17 @@ export default {
 
       try {
         const response = await fetch(
-          'http://localhost:3000/api/users/profile',
+          `${config.apiUrl}/api/users/users/${store.state.user.id}`,
           {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${store.state.token}`,
             },
-            body: JSON.stringify({ name: name.value }),
+            body: JSON.stringify({
+              email: email.value,
+              username: username.value,
+            }),
           }
         );
 
@@ -132,7 +136,7 @@ export default {
 
       try {
         const response = await fetch(
-          'http://localhost:3000/api/users/change-password',
+          `${config.apiUrl}/api/users/change-password`,
           {
             method: 'POST',
             headers: {
@@ -176,7 +180,7 @@ export default {
 
       try {
         const response = await fetch(
-          `http://localhost:3000/api/users/users/${store.state.user.id}`,
+          `${config.apiUrl}/api/users/users/${store.state.user.id}`,
           {
             method: 'DELETE',
             headers: {

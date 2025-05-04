@@ -29,6 +29,7 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
+import config from '../config';
 
 export default {
   name: 'UserSettings',
@@ -41,14 +42,11 @@ export default {
 
     const fetchUserSettings = async () => {
       try {
-        const response = await fetch(
-          'http://localhost:3000/api/users/settings',
-          {
-            headers: {
-              Authorization: `Bearer ${store.state.token}`,
-            },
-          }
-        );
+        const response = await fetch(`${config.apiUrl}/api/users/settings`, {
+          headers: {
+            Authorization: `Bearer ${store.state.token}`,
+          },
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch settings');
         }
@@ -65,19 +63,16 @@ export default {
       error.value = '';
       success.value = '';
       try {
-        const response = await fetch(
-          'http://localhost:3000/api/users/settings',
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${store.state.token}`,
-            },
-            body: JSON.stringify({
-              monthly_salary: monthly_salary.value,
-            }),
-          }
-        );
+        const response = await fetch(`${config.apiUrl}/api/users/settings`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${store.state.token}`,
+          },
+          body: JSON.stringify({
+            monthly_salary: monthly_salary.value,
+          }),
+        });
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to update salary');

@@ -62,6 +62,7 @@
 
 <script>
 import { ref } from 'vue';
+import config from '../config';
 
 export default {
   name: 'HomeCalculator',
@@ -107,7 +108,7 @@ export default {
         };
 
         const response = await fetch(
-          'http://localhost:3000/api/overtime/calculate',
+          `${config.apiUrl}/api/overtime/calculate`,
           {
             method: 'POST',
             headers: {

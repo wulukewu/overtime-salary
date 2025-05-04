@@ -40,6 +40,8 @@
 </template>
 
 <script>
+import config from '../config';
+
 export default {
   data() {
     return {
@@ -52,7 +54,7 @@ export default {
   methods: {
     async calculate() {
       try {
-        const response = await fetch('http://localhost:3000/api/calculate', {
+        const response = await fetch(`${config.apiUrl}/api/calculate`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
