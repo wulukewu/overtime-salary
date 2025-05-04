@@ -45,6 +45,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import config from './config';
 
 export default {
   name: 'App',
@@ -65,14 +66,11 @@ export default {
     const fetchUserProfile = async () => {
       if (store.state.token) {
         try {
-          const response = await fetch(
-            'http://localhost:3000/api/users/profile',
-            {
-              headers: {
-                Authorization: `Bearer ${store.state.token}`,
-              },
-            }
-          );
+          const response = await fetch(`${config.apiUrl}/api/users/profile`, {
+            headers: {
+              Authorization: `Bearer ${store.state.token}`,
+            },
+          });
           if (response.ok) {
             const data = await response.json();
             username.value = data.username;
