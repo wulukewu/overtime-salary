@@ -346,39 +346,57 @@ router.post(
       try {
         console.log('Processing record:', data);
 
+        // Handle different date column names
+        const date = data.date || data._date;
+        if (!date) {
+          errors.push({ row: data, error: 'Missing date field' });
+          continue;
+        }
+
+        // Convert date format from YYYY/MM/DD to YYYY-MM-DD
+        const formattedDate = date.replace(/\//g, '-');
+
+        // Clean up salary value (remove $, spaces, and commas)
+        const salaryStr = (data.salary || '').replace(/[$,]/g, '').trim();
+        const salary = parseFloat(salaryStr);
+
+        // Get end_hour and minutes
+        const endHour = parseInt(data.end_hour);
+        const minutes = parseInt(data.minutes);
+
+        console.log('Parsed values:', {
+          formattedDate,
+          salary,
+          endHour,
+          minutes,
+        });
+
         // Validate required fields
         if (
-          !data.date ||
-          !data.salary ||
-          !data.end_hour ||
-          data.minutes === undefined
+          !formattedDate ||
+          isNaN(salary) ||
+          isNaN(endHour) ||
+          isNaN(minutes)
         ) {
           errors.push({
             row: data,
             error:
-              'Missing required fields. Required: date, salary, end_hour, minutes',
+              'Invalid or missing required fields. Required: date, salary, end_hour, minutes',
           });
           continue;
         }
 
-        // Validate data types and ranges
-        const salary = parseFloat(data.salary);
-        const endHour = parseInt(data.end_hour);
-        const minutes = parseInt(data.minutes);
-
-        console.log('Parsed values:', { salary, endHour, minutes });
-
-        if (isNaN(salary) || salary <= 0) {
+        if (salary <= 0) {
           errors.push({ row: data, error: 'Invalid salary value' });
           continue;
         }
 
-        if (isNaN(endHour) || endHour < 19) {
+        if (endHour < 19) {
           errors.push({ row: data, error: 'End hour must be 19 or later' });
           continue;
         }
 
-        if (isNaN(minutes) || minutes < 0 || minutes > 59) {
+        if (minutes < 0 || minutes > 59) {
           errors.push({ row: data, error: 'Minutes must be between 0 and 59' });
           continue;
         }
@@ -410,7 +428,7 @@ router.post(
           'INSERT INTO overtime_records (user_id, date, salary, end_hour, minutes, calculated_pay, group_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
           [
             req.userId,
-            data.date,
+            formattedDate,
             salary,
             endHour,
             minutes,
