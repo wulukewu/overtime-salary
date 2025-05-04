@@ -3,6 +3,14 @@ const router = express.Router();
 const { all, get, run } = require('./database');
 const calculateOvertimePay = require('./overtimeCalculator');
 const authenticate = require('./auth');
+const multer = require('multer');
+const csv = require('csv-parse');
+const { createObjectCsvWriter } = require('csv-writer');
+const fs = require('fs');
+const path = require('path');
+
+// Configure multer for file upload
+const upload = multer({ dest: 'uploads/' });
 
 // Get all overtime records for the authenticated user
 router.get('/', authenticate, async (req, res) => {
@@ -250,6 +258,177 @@ router.put('/:id', authenticate, async (req, res) => {
     console.error('Error updating record:', error);
     res.status(500).json({ error: 'Failed to update record' });
   }
+});
+
+// Export all records to CSV
+router.get('/export-csv', authenticate, async (req, res) => {
+  try {
+    const records = await all(
+      `SELECT r.*, g.name as group_name 
+       FROM overtime_records r 
+       LEFT JOIN groups g ON r.group_id = g.id 
+       WHERE r.user_id = ? 
+       ORDER BY r.date DESC`,
+      [req.userId]
+    );
+
+    const csvWriter = createObjectCsvWriter({
+      path: 'temp_export.csv',
+      header: [
+        { id: 'date', title: 'Date' },
+        { id: 'salary', title: 'Salary' },
+        { id: 'end_hour', title: 'End Hour' },
+        { id: 'minutes', title: 'Minutes' },
+        { id: 'calculated_pay', title: 'Calculated Pay' },
+        { id: 'group_name', title: 'Group' },
+      ],
+    });
+
+    await csvWriter.writeRecords(records);
+
+    res.download('temp_export.csv', 'overtime_records.csv', (err) => {
+      if (err) {
+        console.error('Error downloading file:', err);
+      }
+      // Clean up the temporary file
+      fs.unlinkSync('temp_export.csv');
+    });
+  } catch (error) {
+    console.error('Error exporting records:', error);
+    res.status(500).json({ error: 'Failed to export records' });
+  }
+});
+
+// Import records from CSV
+router.post(
+  '/import-csv',
+  authenticate,
+  upload.single('file'),
+  async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const results = [];
+    const errors = [];
+
+    fs.createReadStream(req.file.path)
+      .pipe(csv.parse({ columns: true, trim: true }))
+      .on('data', async (data) => {
+        try {
+          // Validate required fields
+          if (
+            !data.date ||
+            !data.salary ||
+            !data.end_hour ||
+            data.minutes === undefined
+          ) {
+            errors.push({ row: data, error: 'Missing required fields' });
+            return;
+          }
+
+          // Validate data types
+          const salary = parseFloat(data.salary);
+          const endHour = parseInt(data.end_hour);
+          const minutes = parseInt(data.minutes);
+
+          if (isNaN(salary) || isNaN(endHour) || isNaN(minutes)) {
+            errors.push({ row: data, error: 'Invalid numeric values' });
+            return;
+          }
+
+          // Calculate overtime pay
+          const calculatedPay = calculateOvertimePay(
+            salary,
+            endHour,
+            minutes
+          ).result;
+
+          // Handle group if provided
+          let groupId = null;
+          if (data.group) {
+            const group = await get(
+              'SELECT id FROM groups WHERE name = ? AND user_id = ?',
+              [data.group, req.userId]
+            );
+            if (group) {
+              groupId = group.id;
+            } else {
+              // Create new group if it doesn't exist
+              const result = await run(
+                'INSERT INTO groups (user_id, name) VALUES (?, ?)',
+                [req.userId, data.group]
+              );
+              groupId = result.lastID;
+            }
+          }
+
+          // Insert record into database
+          const result = await run(
+            'INSERT INTO overtime_records (user_id, date, salary, end_hour, minutes, calculated_pay, group_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [
+              req.userId,
+              data.date,
+              salary,
+              endHour,
+              minutes,
+              calculatedPay,
+              groupId,
+            ]
+          );
+          results.push(result);
+        } catch (error) {
+          errors.push({ row: data, error: error.message });
+        }
+      })
+      .on('end', () => {
+        // Clean up the uploaded file
+        fs.unlinkSync(req.file.path);
+        res.json({
+          success: true,
+          imported: results.length,
+          errors: errors,
+        });
+      })
+      .on('error', (error) => {
+        fs.unlinkSync(req.file.path);
+        res.status(500).json({ error: 'Failed to process CSV file' });
+      });
+  }
+);
+
+// Get CSV template
+router.get('/csv-template', authenticate, (req, res) => {
+  const templatePath = path.join(
+    __dirname,
+    'templates',
+    'overtime_template.csv'
+  );
+
+  // Check if template file exists
+  if (!fs.existsSync(templatePath)) {
+    console.error('Template file not found at:', templatePath);
+    return res.status(500).json({ error: 'Template file not found' });
+  }
+
+  // Set headers for CSV download
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader(
+    'Content-Disposition',
+    'attachment; filename=overtime_template.csv'
+  );
+
+  // Stream the file to the response
+  const fileStream = fs.createReadStream(templatePath);
+  fileStream.pipe(res);
+
+  // Handle errors
+  fileStream.on('error', (error) => {
+    console.error('Error streaming template file:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to send template file' });
+    }
+  });
 });
 
 module.exports = router;
