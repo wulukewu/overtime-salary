@@ -57,12 +57,12 @@ export default createStore({
         const data = await response.json();
         if (response.ok) {
           commit('setToken', data.token);
+
           if (data.user) {
             commit('setUser', data.user);
             commit('setAdmin', data.user.is_admin || false);
           }
 
-          // Fetch user settings after successful login
           const settingsResponse = await fetch(
             `${config.apiUrl}/api/users/settings`,
             {
@@ -77,7 +77,7 @@ export default createStore({
             commit('setMonthlySalary', settingsData.monthly_salary || 0);
           }
 
-          return { success: true };
+          return { success: true, user: data.user };
         } else {
           return { success: false, error: data.error };
         }
