@@ -17,7 +17,6 @@
               v-model.number="end_hour"
               required
               min="19"
-              max="23"
             />
           </div>
           <div class="form-group">
@@ -313,7 +312,6 @@
                 v-model.number="editingRecord.end_hour"
                 required
                 min="19"
-                max="23"
               />
             </div>
             <div class="form-group">

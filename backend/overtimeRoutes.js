@@ -390,6 +390,7 @@ router.post(
           continue;
         }
 
+        // Validate end_hour and minutes
         if (endHour < 19) {
           errors.push({ row: data, error: 'End hour must be 19 or later' });
           continue;
