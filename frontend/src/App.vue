@@ -44,6 +44,12 @@
       </div>
     </nav>
     <router-view />
+    <CustomNotification
+      :show="notification.show"
+      :message="notification.message"
+      :duration="notification.duration"
+      @close="hideNotification"
+    />
   </div>
 </template>
 
@@ -52,9 +58,13 @@ import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import config from './config';
+import CustomNotification from './components/CustomNotification.vue';
 
 export default {
   name: 'App',
+  components: {
+    CustomNotification,
+  },
   setup() {
     const store = useStore();
     const router = useRouter();
@@ -63,6 +73,11 @@ export default {
 
     const isAuthenticated = computed(() => store.state.token !== null);
     const isAdmin = computed(() => store.state.isAdmin);
+    const notification = computed(() => store.state.notification);
+
+    const hideNotification = () => {
+      store.dispatch('notification/hideNotification');
+    };
 
     const logout = () => {
       store.dispatch('logout');
@@ -96,6 +111,8 @@ export default {
       username,
       showDropdown,
       logout,
+      notification,
+      hideNotification,
     };
   },
 };

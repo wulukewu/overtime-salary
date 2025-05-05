@@ -1,5 +1,6 @@
 import { createStore } from 'vuex';
 import config from '../config';
+import notification from './modules/notification';
 
 export default createStore({
   state: {
@@ -103,5 +104,8 @@ export default createStore({
     isAdmin: (state) => state.isAdmin,
     currentUser: (state) => state.user,
     getToken: (state) => state.token,
+  },
+  modules: {
+    notification,
   },
 });
