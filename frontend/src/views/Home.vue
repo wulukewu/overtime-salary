@@ -2,7 +2,11 @@
   <div class="home">
     <h1>Overtime Pay Calculator</h1>
     <div class="calculator-section">
-      <form @submit.prevent="calculateOvertime" class="calculator-form">
+      <form
+        @submit.prevent="calculateOvertime"
+        class="calculator-form"
+        novalidate
+      >
         <div class="form-group">
           <label for="salary">Monthly Salary:</label>
           <input
@@ -11,7 +15,9 @@
             v-model.number="salary"
             required
             min="0"
+            @blur="validateSalary"
           />
+          <span v-if="salaryError" class="field-error">{{ salaryError }}</span>
         </div>
         <div class="form-group">
           <label for="end_hour">Overtime End Hour (24h):</label>
@@ -21,7 +27,11 @@
             v-model.number="end_hour"
             required
             min="19"
+            @blur="validateEndHour"
           />
+          <span v-if="endHourError" class="field-error">{{
+            endHourError
+          }}</span>
         </div>
         <div class="form-group">
           <label for="minutes">Overtime Minutes:</label>
@@ -32,13 +42,20 @@
             required
             min="0"
             max="59"
+            @blur="validateMinutes"
           />
+          <span v-if="minutesError" class="field-error">{{
+            minutesError
+          }}</span>
         </div>
         <button type="submit" :disabled="loading">
           {{ loading ? 'Calculating...' : 'Calculate' }}
         </button>
-        <div v-if="result" class="result">
-          <h3>Calculated Overtime Pay: {{ result }}</h3>
+        <div v-if="result !== null" class="result">
+          <h3 v-if="result === 0" class="zero-result">
+            No overtime pay (End time is 19:00)
+          </h3>
+          <h3 v-else>Calculated Overtime Pay: {{ result }}</h3>
         </div>
         <div v-if="error" class="error-message">{{ error }}</div>
       </form>
@@ -51,54 +68,105 @@
         overtime pay rules where overtime hours are compensated at a higher
         rate.
       </p>
-      <p>
+      <p v-if="!isLoggedIn">
         To save your calculations and access more features, please
         <router-link to="/register">create an account</router-link> or
         <router-link to="/login">login</router-link>.
+      </p>
+      <p v-else>
+        <a href="#" @click.prevent="goToDashboard">Go to Dashboard</a> to view
+        your saved calculations and access more features.
       </p>
     </div>
   </div>
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
 import config from '../config';
 
 export default {
   name: 'HomeCalculator',
   setup() {
+    const store = useStore();
+    const router = useRouter();
     const salary = ref(30000);
     const end_hour = ref(19);
     const minutes = ref(0);
     const result = ref(null);
     const error = ref('');
     const loading = ref(false);
+    const salaryError = ref('');
+    const endHourError = ref('');
+    const minutesError = ref('');
+
+    const isLoggedIn = computed(() => store.state.token !== null);
+
+    const goToDashboard = () => {
+      router.push('/dashboard');
+    };
+
+    const validateSalary = () => {
+      if (
+        salary.value === null ||
+        salary.value === undefined ||
+        salary.value === ''
+      ) {
+        salaryError.value = 'Please enter a monthly salary';
+        return false;
+      }
+      if (salary.value < 0) {
+        salaryError.value = 'Salary cannot be negative';
+        return false;
+      }
+      salaryError.value = '';
+      return true;
+    };
+
+    const validateEndHour = () => {
+      if (
+        end_hour.value === null ||
+        end_hour.value === undefined ||
+        end_hour.value === ''
+      ) {
+        endHourError.value = 'Please enter an end hour';
+        return false;
+      }
+      if (end_hour.value < 19) {
+        endHourError.value = 'End hour must be 19 or later';
+        return false;
+      }
+      endHourError.value = '';
+      return true;
+    };
+
+    const validateMinutes = () => {
+      if (
+        minutes.value === null ||
+        minutes.value === undefined ||
+        minutes.value === ''
+      ) {
+        minutesError.value = 'Please enter minutes';
+        return false;
+      }
+      if (minutes.value < 0 || minutes.value > 59) {
+        minutesError.value = 'Minutes must be between 0 and 59';
+        return false;
+      }
+      minutesError.value = '';
+      return true;
+    };
 
     const calculateOvertime = async () => {
       error.value = '';
       loading.value = true;
       try {
-        // Validate inputs
-        if (
-          salary.value === null ||
-          salary.value === undefined ||
-          salary.value === ''
-        ) {
-          throw new Error('Please enter a monthly salary');
-        }
-        if (
-          end_hour.value === null ||
-          end_hour.value === undefined ||
-          end_hour.value === ''
-        ) {
-          throw new Error('Please enter an end hour');
-        }
-        if (
-          minutes.value === null ||
-          minutes.value === undefined ||
-          minutes.value === ''
-        ) {
-          throw new Error('Please enter minutes');
+        // Validate all inputs
+        if (!validateSalary() || !validateEndHour() || !validateMinutes()) {
+          loading.value = false;
+          return;
         }
 
         const requestBody = {
@@ -141,6 +209,14 @@ export default {
       error,
       loading,
       calculateOvertime,
+      validateSalary,
+      validateEndHour,
+      validateMinutes,
+      salaryError,
+      endHourError,
+      minutesError,
+      isLoggedIn,
+      goToDashboard,
     };
   },
 };
@@ -228,5 +304,16 @@ button:disabled {
 
 .info-section a:hover {
   text-decoration: underline;
+}
+
+.zero-result {
+  color: #666;
+  font-style: italic;
+}
+
+.field-error {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
 }
 </style>

@@ -44,25 +44,40 @@
       </div>
     </nav>
     <router-view />
+    <CustomNotification
+      :show="notification.show"
+      :message="notification.message"
+      :duration="notification.duration"
+      @close="hideNotification"
+    />
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import config from './config';
+import CustomNotification from './components/CustomNotification.vue';
 
 export default {
   name: 'App',
+  components: {
+    CustomNotification,
+  },
   setup() {
     const store = useStore();
     const router = useRouter();
     const showDropdown = ref(false);
-    const username = ref('');
+    const username = computed(() => store.state.user?.username || '');
 
     const isAuthenticated = computed(() => store.state.token !== null);
     const isAdmin = computed(() => store.state.isAdmin);
+    const notification = computed(() => store.state.notification);
+
+    const hideNotification = () => {
+      store.dispatch('notification/hideNotification');
+    };
 
     const logout = () => {
       store.dispatch('logout');
@@ -70,7 +85,7 @@ export default {
     };
 
     const fetchUserProfile = async () => {
-      if (store.state.token) {
+      if (store.state.token && !store.state.user) {
         try {
           const response = await fetch(`${config.apiUrl}/api/users/profile`, {
             headers: {
@@ -79,7 +94,7 @@ export default {
           });
           if (response.ok) {
             const data = await response.json();
-            username.value = data.username;
+            store.commit('setUser', data);
             store.commit('setAdmin', data.is_admin);
           }
         } catch (error) {
@@ -90,12 +105,24 @@ export default {
 
     onMounted(fetchUserProfile);
 
+    // Watch for token changes to fetch user profile
+    watch(
+      () => store.state.token,
+      (newToken) => {
+        if (newToken) {
+          fetchUserProfile();
+        }
+      }
+    );
+
     return {
       isAuthenticated,
       isAdmin,
       username,
       showDropdown,
       logout,
+      notification,
+      hideNotification,
     };
   },
 };

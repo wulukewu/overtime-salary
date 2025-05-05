@@ -58,11 +58,17 @@ export default {
           router.push('/dashboard');
         } else {
           console.error('Login failed:', result.error);
-          alert(result.error || 'Login failed');
+          store.dispatch('notification/showNotification', {
+            message: result.error || 'Login failed',
+            duration: 3000,
+          });
         }
       } catch (error) {
         console.error('Login error:', error);
-        alert('Login failed. Please try again.');
+        store.dispatch('notification/showNotification', {
+          message: 'Login failed. Please try again.',
+          duration: 3000,
+        });
       } finally {
         loading.value = false;
       }

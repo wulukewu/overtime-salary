@@ -5,7 +5,11 @@
     <div class="dashboard-content">
       <div class="calculator-section">
         <h2>Calculate Overtime Pay</h2>
-        <form @submit.prevent="calculateOvertime" class="calculator-form">
+        <form
+          @submit.prevent="calculateOvertime"
+          class="calculator-form"
+          novalidate
+        >
           <div class="form-group">
             <label>Monthly Salary: {{ store.state.monthly_salary }}</label>
           </div>
@@ -17,8 +21,11 @@
               v-model.number="end_hour"
               required
               min="19"
-              max="23"
+              @blur="validateEndHour"
             />
+            <span v-if="endHourError" class="field-error">{{
+              endHourError
+            }}</span>
           </div>
           <div class="form-group">
             <label for="minutes">Overtime Minutes:</label>
@@ -29,16 +36,25 @@
               required
               min="0"
               max="59"
+              @blur="validateMinutes"
             />
+            <span v-if="minutesError" class="field-error">{{
+              minutesError
+            }}</span>
           </div>
           <button type="submit" :disabled="loading">
             {{ loading ? 'Calculating...' : 'Calculate' }}
           </button>
-          <div v-if="result" class="result">
-            <h3>Calculated Overtime Pay: {{ result }}</h3>
-            <button @click="saveRecord" :disabled="saving">
-              {{ saving ? 'Saving...' : 'Save Record' }}
-            </button>
+          <div v-if="result !== null" class="result">
+            <h3 v-if="result === 0" class="zero-result">
+              No overtime pay (End time is 19:00)
+            </h3>
+            <template v-else>
+              <h3>Calculated Overtime Pay: {{ result }}</h3>
+              <button @click="saveRecord" :disabled="saving">
+                {{ saving ? 'Saving...' : 'Save Record' }}
+              </button>
+            </template>
           </div>
           <div v-if="error" class="error-message">{{ error }}</div>
         </form>
@@ -313,7 +329,6 @@
                 v-model.number="editingRecord.end_hour"
                 required
                 min="19"
-                max="23"
               />
             </div>
             <div class="form-group">
@@ -388,6 +403,8 @@ export default {
     const collapsedGroups = ref([]);
     const editingRecord = ref(null);
     const updatingRecord = ref(false);
+    const endHourError = ref('');
+    const minutesError = ref('');
 
     const groupRecordRefs = computed(() => {
       const map = {};
@@ -599,27 +616,53 @@ export default {
       }
     };
 
+    const validateEndHour = () => {
+      if (
+        end_hour.value === null ||
+        end_hour.value === undefined ||
+        end_hour.value === ''
+      ) {
+        endHourError.value = 'Please enter an end hour';
+        return false;
+      }
+      if (end_hour.value < 19) {
+        endHourError.value = 'End hour must be 19 or later';
+        return false;
+      }
+      endHourError.value = '';
+      return true;
+    };
+
+    const validateMinutes = () => {
+      if (
+        minutes.value === null ||
+        minutes.value === undefined ||
+        minutes.value === ''
+      ) {
+        minutesError.value = 'Please enter minutes';
+        return false;
+      }
+      if (minutes.value < 0 || minutes.value > 59) {
+        minutesError.value = 'Minutes must be between 0 and 59';
+        return false;
+      }
+      minutesError.value = '';
+      return true;
+    };
+
     const calculateOvertime = async () => {
       error.value = '';
       loading.value = true;
       try {
         // Validate inputs
         if (!store.state.monthly_salary) {
-          throw new Error('Please set your monthly salary in Settings first');
+          error.value = 'Please set your monthly salary in Settings first';
+          loading.value = false;
+          return;
         }
-        if (
-          end_hour.value === null ||
-          end_hour.value === undefined ||
-          end_hour.value === ''
-        ) {
-          throw new Error('Please enter an end hour');
-        }
-        if (
-          minutes.value === null ||
-          minutes.value === undefined ||
-          minutes.value === ''
-        ) {
-          throw new Error('Please enter minutes');
+        if (!validateEndHour() || !validateMinutes()) {
+          loading.value = false;
+          return;
         }
 
         const requestBody = {
@@ -923,6 +966,10 @@ export default {
       onDragEnd,
       onGroupDragEnd,
       groupRecordRefs,
+      validateEndHour,
+      validateMinutes,
+      endHourError,
+      minutesError,
     };
   },
 };
@@ -1281,5 +1328,16 @@ select {
   margin-right: 8px;
   font-size: 12px;
   transition: transform 0.2s;
+}
+
+.zero-result {
+  color: #666;
+  font-style: italic;
+}
+
+.field-error {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
 }
 </style>

@@ -1,5 +1,6 @@
 import { createStore } from 'vuex';
 import config from '../config';
+import notification from './modules/notification';
 
 export default createStore({
   state: {
@@ -56,11 +57,27 @@ export default createStore({
         const data = await response.json();
         if (response.ok) {
           commit('setToken', data.token);
+
           if (data.user) {
             commit('setUser', data.user);
             commit('setAdmin', data.user.is_admin || false);
           }
-          return { success: true };
+
+          const settingsResponse = await fetch(
+            `${config.apiUrl}/api/users/settings`,
+            {
+              headers: {
+                Authorization: `Bearer ${data.token}`,
+              },
+            }
+          );
+
+          if (settingsResponse.ok) {
+            const settingsData = await settingsResponse.json();
+            commit('setMonthlySalary', settingsData.monthly_salary || 0);
+          }
+
+          return { success: true, user: data.user };
         } else {
           return { success: false, error: data.error };
         }
@@ -103,5 +120,8 @@ export default createStore({
     isAdmin: (state) => state.isAdmin,
     currentUser: (state) => state.user,
     getToken: (state) => state.token,
+  },
+  modules: {
+    notification,
   },
 });

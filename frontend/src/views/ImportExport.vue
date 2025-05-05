@@ -29,7 +29,7 @@
           <input
             type="file"
             accept=".csv"
-            @change="handleFileUpload"
+            @change="handleFileSelect"
             ref="fileInput"
           />
         </label>
@@ -79,18 +79,91 @@
 import axios from 'axios';
 import { useStore } from 'vuex';
 import config from '../config';
+import { ref } from 'vue';
 
 export default {
   name: 'ImportExport',
-  data() {
-    return {
-      selectedFile: null,
-      importResult: null,
-    };
-  },
   setup() {
     const store = useStore();
-    return { store };
+    const selectedFile = ref(null);
+    const importResult = ref(null);
+
+    const handleFileSelect = (event) => {
+      selectedFile.value = event.target.files[0];
+    };
+
+    const importRecords = async () => {
+      if (!selectedFile.value) {
+        store.dispatch('notification/showNotification', {
+          message: 'Please select a file first.',
+          duration: 3000,
+        });
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', selectedFile.value);
+
+      try {
+        const response = await axios.post(
+          `${config.apiUrl}/api/overtime/import-csv`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              Authorization: `Bearer ${store.state.token}`,
+            },
+          }
+        );
+
+        importResult.value = response.data;
+        selectedFile.value = null;
+        document.querySelector('input[type="file"]').value = '';
+      } catch (error) {
+        console.error('Error importing records:', error);
+        store.dispatch('notification/showNotification', {
+          message:
+            'Failed to import records. Please check your file format and try again.',
+          duration: 3000,
+        });
+      }
+    };
+
+    const downloadTemplate = async () => {
+      try {
+        const response = await axios.get(
+          `${config.apiUrl}/api/overtime/csv-template`,
+          {
+            responseType: 'blob',
+            headers: {
+              Authorization: `Bearer ${store.state.token}`,
+            },
+          }
+        );
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'overtime_template.csv');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } catch (error) {
+        console.error('Error downloading template:', error);
+        store.dispatch('notification/showNotification', {
+          message: 'Failed to download template. Please try again.',
+          duration: 3000,
+        });
+      }
+    };
+
+    return {
+      selectedFile,
+      importResult,
+      handleFileSelect,
+      importRecords,
+      downloadTemplate,
+    };
   },
   methods: {
     async exportRecords() {
@@ -115,68 +188,6 @@ export default {
       } catch (error) {
         console.error('Error exporting records:', error);
         alert('Failed to export records. Please try again.');
-      }
-    },
-
-    handleFileUpload(event) {
-      this.selectedFile = event.target.files[0];
-      this.importResult = null;
-    },
-
-    async importRecords() {
-      if (!this.selectedFile) {
-        alert('Please select a file first.');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('file', this.selectedFile);
-
-      try {
-        const response = await axios.post(
-          `${config.apiUrl}/api/overtime/import-csv`,
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${this.store.state.token}`,
-            },
-          }
-        );
-
-        this.importResult = response.data;
-        this.selectedFile = null;
-        this.$refs.fileInput.value = '';
-      } catch (error) {
-        console.error('Error importing records:', error);
-        alert(
-          'Failed to import records. Please check your file format and try again.'
-        );
-      }
-    },
-
-    async downloadTemplate() {
-      try {
-        const response = await axios.get(
-          `${config.apiUrl}/api/overtime/csv-template`,
-          {
-            responseType: 'blob',
-            headers: {
-              Authorization: `Bearer ${this.store.state.token}`,
-            },
-          }
-        );
-
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'overtime_template.csv');
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      } catch (error) {
-        console.error('Error downloading template:', error);
-        alert('Failed to download template. Please try again.');
       }
     },
   },
