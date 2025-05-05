@@ -68,22 +68,30 @@
         overtime pay rules where overtime hours are compensated at a higher
         rate.
       </p>
-      <p>
+      <p v-if="!isLoggedIn">
         To save your calculations and access more features, please
         <router-link to="/register">create an account</router-link> or
         <router-link to="/login">login</router-link>.
+      </p>
+      <p v-else>
+        <a href="#" @click.prevent="goToDashboard">Go to Dashboard</a> to view
+        your saved calculations and access more features.
       </p>
     </div>
   </div>
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
 import config from '../config';
 
 export default {
   name: 'HomeCalculator',
   setup() {
+    const store = useStore();
+    const router = useRouter();
     const salary = ref(30000);
     const end_hour = ref(19);
     const minutes = ref(0);
@@ -93,6 +101,12 @@ export default {
     const salaryError = ref('');
     const endHourError = ref('');
     const minutesError = ref('');
+
+    const isLoggedIn = computed(() => store.state.token !== null);
+
+    const goToDashboard = () => {
+      router.push('/dashboard');
+    };
 
     const validateSalary = () => {
       if (
@@ -201,6 +215,8 @@ export default {
       salaryError,
       endHourError,
       minutesError,
+      isLoggedIn,
+      goToDashboard,
     };
   },
 };

@@ -66,6 +66,12 @@ router.beforeEach((to, from, next) => {
   const isAuthenticated = localStorage.getItem('token') !== null;
   const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
+  // Redirect authenticated users from login/register to dashboard
+  if (isAuthenticated && (to.name === 'Login' || to.name === 'Register')) {
+    next({ name: 'Dashboard' });
+    return;
+  }
+
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (!isAuthenticated) {
       next({ name: 'Login' });
