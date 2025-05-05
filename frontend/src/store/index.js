@@ -61,6 +61,22 @@ export default createStore({
             commit('setUser', data.user);
             commit('setAdmin', data.user.is_admin || false);
           }
+
+          // Fetch user settings after successful login
+          const settingsResponse = await fetch(
+            `${config.apiUrl}/api/users/settings`,
+            {
+              headers: {
+                Authorization: `Bearer ${data.token}`,
+              },
+            }
+          );
+
+          if (settingsResponse.ok) {
+            const settingsData = await settingsResponse.json();
+            commit('setMonthlySalary', settingsData.monthly_salary || 0);
+          }
+
           return { success: true };
         } else {
           return { success: false, error: data.error };
