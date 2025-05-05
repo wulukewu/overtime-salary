@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/wulukewu/overtime-salary/compare/v1.1.0...v1.2.0) (2025-05-05)
+
+
+### Features
+
+* add custom notification system ([#17](https://github.com/wulukewu/overtime-salary/issues/17)) ([b1a66a3](https://github.com/wulukewu/overtime-salary/commit/b1a66a38d60254d0ea3540687740b3cbb990bafe))
+
 ## [1.1.0](https://github.com/wulukewu/overtime-salary/compare/v1.0.5...v1.1.0) (2025-05-04)
 
 
