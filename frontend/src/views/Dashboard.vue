@@ -33,11 +33,16 @@
           <button type="submit" :disabled="loading">
             {{ loading ? 'Calculating...' : 'Calculate' }}
           </button>
-          <div v-if="result" class="result">
-            <h3>Calculated Overtime Pay: {{ result }}</h3>
-            <button @click="saveRecord" :disabled="saving">
-              {{ saving ? 'Saving...' : 'Save Record' }}
-            </button>
+          <div v-if="result !== null" class="result">
+            <h3 v-if="result === 0" class="zero-result">
+              No overtime pay (End time is 19:00)
+            </h3>
+            <template v-else>
+              <h3>Calculated Overtime Pay: {{ result }}</h3>
+              <button @click="saveRecord" :disabled="saving">
+                {{ saving ? 'Saving...' : 'Save Record' }}
+              </button>
+            </template>
           </div>
           <div v-if="error" class="error-message">{{ error }}</div>
         </form>
@@ -1279,5 +1284,10 @@ select {
   margin-right: 8px;
   font-size: 12px;
   transition: transform 0.2s;
+}
+
+.zero-result {
+  color: #666;
+  font-style: italic;
 }
 </style>
