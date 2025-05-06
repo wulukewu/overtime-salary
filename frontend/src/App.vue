@@ -15,7 +15,6 @@
         <router-link to="/admin" v-if="isAdmin">Admin Panel</router-link>
       </div>
       <div class="nav-right">
-        <LanguageSwitcher />
         <template v-if="isAuthenticated">
           <div class="user-dropdown">
             <span
@@ -55,12 +54,13 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, provide } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import config from './config';
 import CustomNotification from './components/CustomNotification.vue';
 import LanguageSwitcher from './components/LanguageSwitcher.vue';
+import { i18n } from './i18n/i18n';
 
 export default {
   name: 'App',
@@ -77,6 +77,9 @@ export default {
     const isAuthenticated = computed(() => store.state.token !== null);
     const isAdmin = computed(() => store.state.isAdmin);
     const notification = computed(() => store.state.notification);
+
+    // Provide i18n to all components
+    provide('i18n', i18n);
 
     const hideNotification = () => {
       store.dispatch('notification/hideNotification');
