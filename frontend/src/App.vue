@@ -15,6 +15,7 @@
         <router-link to="/admin" v-if="isAdmin">Admin Panel</router-link>
       </div>
       <div class="nav-right">
+        <LanguageSwitcher />
         <template v-if="isAuthenticated">
           <div class="user-dropdown">
             <span
@@ -59,11 +60,13 @@ import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import config from './config';
 import CustomNotification from './components/CustomNotification.vue';
+import LanguageSwitcher from './components/LanguageSwitcher.vue';
 
 export default {
   name: 'App',
   components: {
     CustomNotification,
+    LanguageSwitcher,
   },
   setup() {
     const store = useStore();
