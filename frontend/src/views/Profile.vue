@@ -1,69 +1,89 @@
 <template>
-  <div class="profile">
-    <h1>Profile</h1>
+  <div class="profile-container">
+    <h1>{{ $t('profile.title') }}</h1>
     <div class="profile-content">
       <div class="profile-section">
-        <h2>Update Profile</h2>
+        <h2>{{ $t('profile.updateProfile') }}</h2>
         <form @submit.prevent="updateProfile" class="profile-form">
           <div class="form-group">
-            <label for="name">Name:</label>
+            <label for="name">{{ $t('profile.name') }}:</label>
             <input
               type="text"
               id="name"
               v-model="name"
               required
-              placeholder="Enter your name"
+              :placeholder="$t('profile.enterName')"
             />
           </div>
-          <button type="submit" :disabled="updating">
-            {{ updating ? 'Updating...' : 'Update Profile' }}
+          <div class="form-group">
+            <label for="email">{{ $t('profile.email') }}:</label>
+            <input
+              type="email"
+              id="email"
+              v-model="email"
+              required
+              :placeholder="$t('profile.enterEmail')"
+            />
+          </div>
+          <div class="form-group">
+            <label for="username">{{ $t('profile.username') }}:</label>
+            <input type="text" id="username" v-model="username" disabled />
+          </div>
+          <button type="submit" :disabled="saving">
+            {{ saving ? $t('profile.saving') : $t('profile.save') }}
           </button>
-          <div v-if="updateError" class="error-message">{{ updateError }}</div>
-          <div v-if="updateSuccess" class="success-message">
-            Profile updated successfully
+          <div v-if="error" class="error-message">{{ error }}</div>
+          <div v-if="success" class="success-message">
+            {{ $t('profile.success') }}
           </div>
         </form>
       </div>
 
       <div class="password-section">
-        <h2>Change Password</h2>
+        <h2>{{ $t('profile.changePassword') }}</h2>
         <form @submit.prevent="changePassword" class="password-form">
           <div class="form-group">
-            <label for="currentPassword">Current Password:</label>
+            <label for="currentPassword"
+              >{{ $t('profile.currentPassword') }}:</label
+            >
             <input
               type="password"
               id="currentPassword"
               v-model="currentPassword"
               required
-              placeholder="Enter current password"
+              :placeholder="$t('profile.enterCurrentPassword')"
             />
           </div>
           <div class="form-group">
-            <label for="newPassword">New Password:</label>
+            <label for="newPassword">{{ $t('profile.newPassword') }}:</label>
             <input
               type="password"
               id="newPassword"
               v-model="newPassword"
               required
-              placeholder="Enter new password"
+              :placeholder="$t('profile.enterNewPassword')"
             />
           </div>
           <button type="submit" :disabled="changingPassword">
-            {{ changingPassword ? 'Changing...' : 'Change Password' }}
+            {{
+              changingPassword
+                ? $t('profile.changing')
+                : $t('profile.changePassword')
+            }}
           </button>
           <div v-if="passwordError" class="error-message">
             {{ passwordError }}
           </div>
           <div v-if="passwordSuccess" class="success-message">
-            Password changed successfully
+            {{ $t('profile.passwordChanged') }}
           </div>
         </form>
       </div>
 
       <div class="delete-section">
-        <h2>Delete Account</h2>
+        <h2>{{ $t('profile.deleteAccount') }}</h2>
         <button @click="deleteAccount" :disabled="deleting" class="delete-btn">
-          {{ deleting ? 'Deleting...' : 'Delete Account' }}
+          {{ deleting ? $t('profile.deleting') : $t('profile.deleteAccount') }}
         </button>
         <div v-if="deleteError" class="error-message">{{ deleteError }}</div>
       </div>
@@ -75,6 +95,7 @@
 import { ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import config from '../config';
 
 export default {
@@ -82,49 +103,74 @@ export default {
   setup() {
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
     const name = ref('');
+    const email = ref('');
+    const username = ref('');
     const currentPassword = ref('');
     const newPassword = ref('');
-    const updating = ref(false);
+    const saving = ref(false);
     const changingPassword = ref(false);
     const deleting = ref(false);
-    const updateError = ref('');
-    const updateSuccess = ref(false);
+    const error = ref('');
+    const success = ref(false);
     const passwordError = ref('');
     const passwordSuccess = ref(false);
     const deleteError = ref('');
 
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch(`${config.apiUrl}/api/users/profile`, {
+          headers: {
+            Authorization: `Bearer ${store.state.token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(t('profile.error'));
+        }
+
+        const data = await response.json();
+        name.value = data.name;
+        email.value = data.email;
+        username.value = data.username;
+      } catch (err) {
+        error.value = err.message;
+      }
+    };
+
     const updateProfile = async () => {
-      updating.value = true;
-      updateError.value = '';
-      updateSuccess.value = false;
+      saving.value = true;
+      error.value = '';
+      success.value = false;
 
       try {
-        const response = await fetch(
-          `${config.apiUrl}/api/users/users/${store.state.user.id}`,
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${store.state.token}`,
-            },
-            body: JSON.stringify({
-              name: name.value,
-            }),
-          }
-        );
+        const response = await fetch(`${config.apiUrl}/api/users/profile`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${store.state.token}`,
+          },
+          body: JSON.stringify({
+            name: name.value,
+            email: email.value,
+          }),
+        });
 
-        if (response.ok) {
-          updateSuccess.value = true;
-          store.commit('setUser', { ...store.state.user, name: name.value });
-        } else {
-          const data = await response.json();
-          updateError.value = data.error || 'Error updating profile';
+        if (!response.ok) {
+          throw new Error(t('profile.error'));
         }
+
+        success.value = true;
+        store.commit('setUser', {
+          ...store.state.user,
+          name: name.value,
+          email: email.value,
+        });
       } catch (err) {
-        updateError.value = 'Error updating profile';
+        error.value = err.message;
       } finally {
-        updating.value = false;
+        saving.value = false;
       }
     };
 
@@ -166,11 +212,7 @@ export default {
     };
 
     const deleteAccount = async () => {
-      if (
-        !confirm(
-          'Are you sure you want to delete your account? This action cannot be undone.'
-        )
-      ) {
+      if (!confirm(t('profile.confirmDelete'))) {
         return;
       }
 
@@ -202,21 +244,19 @@ export default {
       }
     };
 
-    onMounted(() => {
-      if (store.state.user) {
-        name.value = store.state.user.name;
-      }
-    });
+    onMounted(fetchProfile);
 
     return {
       name,
+      email,
+      username,
       currentPassword,
       newPassword,
-      updating,
+      saving,
       changingPassword,
       deleting,
-      updateError,
-      updateSuccess,
+      error,
+      success,
       passwordError,
       passwordSuccess,
       deleteError,
@@ -229,7 +269,7 @@ export default {
 </script>
 
 <style scoped>
-.profile {
+.profile-container {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
@@ -263,11 +303,21 @@ export default {
   gap: 0.5rem;
 }
 
+label {
+  font-weight: 500;
+  color: #333;
+}
+
 input {
-  padding: 0.5rem;
+  padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
+}
+
+input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
 }
 
 button {
