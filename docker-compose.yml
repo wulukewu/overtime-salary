@@ -1,27 +1,29 @@
+version: '3.8'
+
 services:
   backend:
-    build: ./backend
+    image: ghcr.io/wulukewu/overtime-salary-backend:latest
+    pull_policy: always
     ports:
       - '3000:3000'
     volumes:
-      - ./backend:/app
-      - /app/node_modules
       - ./backend/data:/app/data
     environment:
       - NODE_ENV=development
+      - JWT_SECRET=your-secure-jwt-secret-key
+      - ALLOWED_ORIGINS=http://localhost:8080
+      - TRUST_PROXY=1
     networks:
       - app-network
 
   frontend:
-    build: ./frontend
+    image: ghcr.io/wulukewu/overtime-salary-frontend:latest
+    pull_policy: always
     ports:
       - '8080:8080'
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     environment:
       - NODE_ENV=development
-      - VUE_APP_API_URL=${API_URL:-http://localhost:3000}
+      - VUE_APP_API_URL=http://localhost:3000
     networks:
       - app-network
     depends_on:
