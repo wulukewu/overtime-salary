@@ -1,20 +1,20 @@
 /* eslint-disable vue/no-unused-vars */
 <template>
   <div class="dashboard">
-    <h1>Dashboard</h1>
+    <h1>{{ $t('dashboard.title') }}</h1>
     <div class="dashboard-content">
       <div class="calculator-section">
-        <h2>Calculate Overtime Pay</h2>
+        <h2>{{ $t('dashboard.calculateTitle') }}</h2>
         <form
           @submit.prevent="calculateOvertime"
           class="calculator-form"
           novalidate
         >
           <div class="form-group">
-            <label>Monthly Salary: {{ store.state.monthly_salary }}</label>
+            <label>{{ $t('dashboard.monthlySalary') }}: {{ store.state.monthly_salary }}</label>
           </div>
           <div class="form-group">
-            <label for="end_hour">Overtime End Hour (24h):</label>
+            <label for="end_hour">{{ $t('dashboard.overtimeEndHour') }}:</label>
             <input
               type="number"
               id="end_hour"
@@ -23,12 +23,10 @@
               min="19"
               @blur="validateEndHour"
             />
-            <span v-if="endHourError" class="field-error">{{
-              endHourError
-            }}</span>
+            <span v-if="endHourError" class="field-error">{{ endHourError }}</span>
           </div>
           <div class="form-group">
-            <label for="minutes">Overtime Minutes:</label>
+            <label for="minutes">{{ $t('dashboard.overtimeMinutes') }}:</label>
             <input
               type="number"
               id="minutes"
@@ -38,21 +36,19 @@
               max="59"
               @blur="validateMinutes"
             />
-            <span v-if="minutesError" class="field-error">{{
-              minutesError
-            }}</span>
+            <span v-if="minutesError" class="field-error">{{ minutesError }}</span>
           </div>
           <button type="submit" :disabled="loading">
-            {{ loading ? 'Calculating...' : 'Calculate' }}
+            {{ loading ? $t('dashboard.calculating') : $t('dashboard.calculate') }}
           </button>
           <div v-if="result !== null" class="result">
             <h3 v-if="result === 0" class="zero-result">
-              No overtime pay (End time is 19:00)
+              {{ $t('dashboard.noOvertimePay') }}
             </h3>
             <template v-else>
-              <h3>Calculated Overtime Pay: {{ result }}</h3>
+              <h3>{{ $t('dashboard.calculatedOvertimePay') }}: {{ result }}</h3>
               <button @click="saveRecord" :disabled="saving">
-                {{ saving ? 'Saving...' : 'Save Record' }}
+                {{ saving ? $t('dashboard.saving') : $t('dashboard.saveRecord') }}
               </button>
             </template>
           </div>
@@ -62,14 +58,14 @@
 
       <div class="records-section">
         <div class="groups-header">
-          <h2>Your Overtime Records</h2>
+          <h2>{{ $t('dashboard.yourRecords') }}</h2>
           <button @click="showNewGroupModal = true" class="new-group-button">
-            New Group
+            {{ $t('dashboard.newGroup') }}
           </button>
         </div>
-        <div v-if="loadingRecords" class="loading">Loading records...</div>
+        <div v-if="loadingRecords" class="loading">{{ $t('dashboard.loadingRecords') }}</div>
         <div v-else-if="records.length === 0" class="no-records">
-          No records found
+          {{ $t('dashboard.noRecords') }}
         </div>
         <div v-else class="groups-container">
           <draggable
@@ -84,23 +80,21 @@
               <div class="group-item">
                 <div class="group-header" @click="toggleGroup(group)">
                   <div class="group-name">
-                    <span class="collapse-icon">{{
-                      group.collapsed ? '▶' : '▼'
-                    }}</span>
+                    <span class="collapse-icon">{{ group.collapsed ? '▶' : '▼' }}</span>
                     {{ group.name }}
                     <span class="group-total">
-                      (Total: {{ getGroupTotal(group.id) }})
+                      ({{ $t('dashboard.total') }}: {{ getGroupTotal(group.id) }})
                     </span>
                   </div>
                   <div class="group-actions">
                     <button @click.stop="editGroup(group)" class="edit-button">
-                      Edit
+                      {{ $t('dashboard.edit') }}
                     </button>
                     <button
                       @click.stop="deleteGroup(group.id)"
                       class="delete-button group-delete-button"
                     >
-                      Delete
+                      {{ $t('dashboard.delete') }}
                     </button>
                   </div>
                 </div>
@@ -130,7 +124,7 @@
                               @click="editRecord(record)"
                               class="edit-button"
                             >
-                              Edit
+                              {{ $t('dashboard.edit') }}
                             </button>
                             <button
                               class="delete-button record-delete-button"
@@ -139,36 +133,28 @@
                             >
                               {{
                                 deletingId === record.id
-                                  ? 'Deleting...'
-                                  : 'Delete'
+                                  ? $t('dashboard.deleting')
+                                  : $t('dashboard.delete')
                               }}
                             </button>
                           </div>
                         </div>
                         <div class="record-details">
                           <div class="detail-item">
-                            <span class="detail-label">Salary:</span>
-                            <span class="detail-value">{{
-                              record.salary
-                            }}</span>
+                            <span class="detail-label">{{ $t('dashboard.salary') }}:</span>
+                            <span class="detail-value">{{ record.salary }}</span>
                           </div>
                           <div class="detail-item">
-                            <span class="detail-label">End Hour:</span>
-                            <span class="detail-value">{{
-                              record.end_hour
-                            }}</span>
+                            <span class="detail-label">{{ $t('dashboard.endHour') }}:</span>
+                            <span class="detail-value">{{ record.end_hour }}</span>
                           </div>
                           <div class="detail-item">
-                            <span class="detail-label">Minutes:</span>
-                            <span class="detail-value">{{
-                              record.minutes
-                            }}</span>
+                            <span class="detail-label">{{ $t('dashboard.minutes') }}:</span>
+                            <span class="detail-value">{{ record.minutes }}</span>
                           </div>
                           <div class="detail-item">
-                            <span class="detail-label">Pay:</span>
-                            <span class="detail-value pay-value">{{
-                              record.calculated_pay
-                            }}</span>
+                            <span class="detail-label">{{ $t('dashboard.calculatedOvertimePay') }}:</span>
+                            <span class="detail-value pay-value">{{ record.calculated_pay }}</span>
                           </div>
                         </div>
                       </div>
@@ -182,9 +168,9 @@
           <div class="group-item">
             <div class="group-header" @click="toggleGroup({ id: undefined })">
               <div class="group-name">
-                Ungrouped
+                {{ $t('dashboard.ungrouped') }}
                 <span class="group-total">
-                  (Total: {{ getGroupTotal('ungrouped') }})
+                  ({{ $t('dashboard.total') }}: {{ getGroupTotal('ungrouped') }})
                 </span>
               </div>
             </div>
@@ -211,7 +197,7 @@
                       </div>
                       <div class="record-actions">
                         <button @click="editRecord(record)" class="edit-button">
-                          Edit
+                          {{ $t('dashboard.edit') }}
                         </button>
                         <button
                           class="delete-button record-delete-button"
@@ -219,29 +205,29 @@
                           :disabled="deletingId === record.id"
                         >
                           {{
-                            deletingId === record.id ? 'Deleting...' : 'Delete'
+                            deletingId === record.id
+                              ? $t('dashboard.deleting')
+                              : $t('dashboard.delete')
                           }}
                         </button>
                       </div>
                     </div>
                     <div class="record-details">
                       <div class="detail-item">
-                        <span class="detail-label">Salary:</span>
+                        <span class="detail-label">{{ $t('dashboard.salary') }}:</span>
                         <span class="detail-value">{{ record.salary }}</span>
                       </div>
                       <div class="detail-item">
-                        <span class="detail-label">End Hour:</span>
+                        <span class="detail-label">{{ $t('dashboard.endHour') }}:</span>
                         <span class="detail-value">{{ record.end_hour }}</span>
                       </div>
                       <div class="detail-item">
-                        <span class="detail-label">Minutes:</span>
+                        <span class="detail-label">{{ $t('dashboard.minutes') }}:</span>
                         <span class="detail-value">{{ record.minutes }}</span>
                       </div>
                       <div class="detail-item">
-                        <span class="detail-label">Pay:</span>
-                        <span class="detail-value pay-value">{{
-                          record.calculated_pay
-                        }}</span>
+                        <span class="detail-label">{{ $t('dashboard.calculatedOvertimePay') }}:</span>
+                        <span class="detail-value pay-value">{{ record.calculated_pay }}</span>
                       </div>
                     </div>
                   </div>
@@ -255,10 +241,10 @@
       <!-- New Group Modal -->
       <div v-if="showNewGroupModal" class="modal">
         <div class="modal-content">
-          <h3>Create New Group</h3>
+          <h3>{{ $t('dashboard.createGroup') }}</h3>
           <form @submit.prevent="createGroup">
             <div class="form-group">
-              <label for="groupName">Group Name:</label>
+              <label for="groupName">{{ $t('dashboard.groupName') }}:</label>
               <input
                 type="text"
                 id="groupName"
@@ -267,10 +253,10 @@
               />
             </div>
             <button type="submit" :disabled="creatingGroup">
-              {{ creatingGroup ? 'Creating...' : 'Create' }}
+              {{ creatingGroup ? $t('dashboard.creating') : $t('common.submit') }}
             </button>
             <button type="button" @click="showNewGroupModal = false">
-              Cancel
+              {{ $t('dashboard.cancel') }}
             </button>
           </form>
         </div>
@@ -279,10 +265,10 @@
       <!-- Edit Group Modal -->
       <div v-if="editingGroup" class="modal">
         <div class="modal-content">
-          <h3>Edit Group</h3>
+          <h3>{{ $t('dashboard.editGroup') }}</h3>
           <form @submit.prevent="updateGroup">
             <div class="form-group">
-              <label for="editGroupName">Group Name:</label>
+              <label for="editGroupName">{{ $t('dashboard.groupName') }}:</label>
               <input
                 type="text"
                 id="editGroupName"
@@ -291,9 +277,11 @@
               />
             </div>
             <button type="submit" :disabled="updatingGroup">
-              {{ updatingGroup ? 'Updating...' : 'Update' }}
+              {{ updatingGroup ? $t('dashboard.updating') : $t('common.submit') }}
             </button>
-            <button type="button" @click="editingGroup = null">Cancel</button>
+            <button type="button" @click="editingGroup = null">
+              {{ $t('dashboard.cancel') }}
+            </button>
           </form>
         </div>
       </div>
@@ -301,10 +289,10 @@
       <!-- Edit Record Modal -->
       <div v-if="editingRecord" class="modal">
         <div class="modal-content">
-          <h3>Edit Record</h3>
+          <h3>{{ $t('dashboard.editRecord') }}</h3>
           <form @submit.prevent="updateRecord">
             <div class="form-group">
-              <label for="editDate">Date:</label>
+              <label for="editDate">{{ $t('dashboard.date') }}:</label>
               <input
                 type="date"
                 id="editDate"
@@ -313,7 +301,7 @@
               />
             </div>
             <div class="form-group">
-              <label for="editSalary">Salary:</label>
+              <label for="editSalary">{{ $t('dashboard.salary') }}:</label>
               <input
                 type="number"
                 id="editSalary"
@@ -322,7 +310,7 @@
               />
             </div>
             <div class="form-group">
-              <label for="editEndHour">End Hour (24h):</label>
+              <label for="editEndHour">{{ $t('dashboard.endHour') }}:</label>
               <input
                 type="number"
                 id="editEndHour"
@@ -332,7 +320,7 @@
               />
             </div>
             <div class="form-group">
-              <label for="editMinutes">Minutes:</label>
+              <label for="editMinutes">{{ $t('dashboard.minutes') }}:</label>
               <input
                 type="number"
                 id="editMinutes"
@@ -343,9 +331,9 @@
               />
             </div>
             <div class="form-group">
-              <label for="editGroup">Group:</label>
+              <label for="editGroup">{{ $t('dashboard.group') }}:</label>
               <select id="editGroup" v-model="editingRecord.group_id">
-                <option :value="null">Ungrouped</option>
+                <option :value="null">{{ $t('dashboard.ungrouped') }}</option>
                 <option
                   v-for="group in groups"
                   :key="group.id"
@@ -357,10 +345,10 @@
             </div>
             <div class="modal-actions">
               <button type="submit" :disabled="updatingRecord">
-                {{ updatingRecord ? 'Updating...' : 'Update' }}
+                {{ updatingRecord ? $t('dashboard.updating') : $t('common.submit') }}
               </button>
               <button type="button" @click="editingRecord = null">
-                Cancel
+                {{ $t('dashboard.cancel') }}
               </button>
             </div>
           </form>
@@ -375,6 +363,7 @@
 /* eslint-disable vue/no-unused-vars */
 import { ref, onMounted, computed } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from 'vue-i18n';
 import draggable from 'vuedraggable';
 import config from '../config';
 
@@ -385,6 +374,7 @@ export default {
   },
   setup() {
     const store = useStore();
+    const { t } = useI18n();
     const end_hour = ref(19);
     const minutes = ref(0);
     const result = ref(null);
@@ -622,11 +612,11 @@ export default {
         end_hour.value === undefined ||
         end_hour.value === ''
       ) {
-        endHourError.value = 'Please enter an end hour';
+        endHourError.value = t('dashboard.validation.enterEndHour');
         return false;
       }
       if (end_hour.value < 19) {
-        endHourError.value = 'End hour must be 19 or later';
+        endHourError.value = t('dashboard.validation.endHourTooEarly');
         return false;
       }
       endHourError.value = '';
@@ -639,11 +629,11 @@ export default {
         minutes.value === undefined ||
         minutes.value === ''
       ) {
-        minutesError.value = 'Please enter minutes';
+        minutesError.value = t('dashboard.validation.enterMinutes');
         return false;
       }
       if (minutes.value < 0 || minutes.value > 59) {
-        minutesError.value = 'Minutes must be between 0 and 59';
+        minutesError.value = t('dashboard.validation.invalidMinutes');
         return false;
       }
       minutesError.value = '';
@@ -656,7 +646,7 @@ export default {
       try {
         // Validate inputs
         if (!store.state.monthly_salary) {
-          error.value = 'Please set your monthly salary in Settings first';
+          error.value = t('dashboard.validation.setSalaryFirst');
           loading.value = false;
           return;
         }

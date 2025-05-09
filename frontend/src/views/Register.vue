@@ -1,64 +1,64 @@
 <template>
   <div class="register-container">
-    <h2>Register</h2>
+    <h2>{{ $t('auth.register') }}</h2>
     <form @submit.prevent="handleRegister" class="register-form">
       <div class="form-group">
-        <label for="name">Name:</label>
+        <label for="name">{{ $t('auth.name') }}:</label>
         <input
           type="text"
           id="name"
           v-model="name"
           required
-          placeholder="Enter your name"
+          :placeholder="$t('auth.enterName')"
         />
       </div>
       <div class="form-group">
-        <label for="email">Email:</label>
+        <label for="email">{{ $t('auth.email') }}:</label>
         <input
           type="email"
           id="email"
           v-model="email"
           required
-          placeholder="Enter your email"
+          :placeholder="$t('auth.enterEmail')"
         />
       </div>
       <div class="form-group">
-        <label for="username">Username:</label>
+        <label for="username">{{ $t('auth.username') }}:</label>
         <input
           type="text"
           id="username"
           v-model="username"
           required
-          placeholder="Choose a username"
+          :placeholder="$t('auth.chooseUsername')"
         />
       </div>
       <div class="form-group">
-        <label for="password">Password:</label>
+        <label for="password">{{ $t('auth.password') }}:</label>
         <input
           type="password"
           id="password"
           v-model="password"
           required
-          placeholder="Enter your password"
+          :placeholder="$t('auth.enterPassword')"
         />
       </div>
       <div class="form-group">
-        <label for="confirmPassword">Confirm Password:</label>
+        <label for="confirmPassword">{{ $t('auth.confirmPassword') }}:</label>
         <input
           type="password"
           id="confirmPassword"
           v-model="confirmPassword"
           required
-          placeholder="Confirm your password"
+          :placeholder="$t('auth.confirmPassword')"
         />
       </div>
       <div v-if="error" class="error-message">{{ error }}</div>
       <button type="submit" :disabled="loading">
-        {{ loading ? 'Registering...' : 'Register' }}
+        {{ loading ? $t('common.loading') : $t('auth.register') }}
       </button>
       <p class="login-link">
-        Already have an account?
-        <router-link to="/login">Login here</router-link>
+        {{ $t('auth.haveAccount') }}
+        <router-link to="/login">{{ $t('auth.loginHere') }}</router-link>
       </p>
     </form>
   </div>
@@ -68,12 +68,14 @@
 import { ref } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 
 export default {
   name: 'RegisterPage',
   setup() {
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
     const name = ref('');
     const email = ref('');
     const username = ref('');
@@ -86,7 +88,7 @@ export default {
       error.value = '';
 
       if (password.value !== confirmPassword.value) {
-        error.value = 'Passwords do not match';
+        error.value = t('auth.passwordsDoNotMatch');
         return;
       }
 
@@ -105,7 +107,7 @@ export default {
           error.value = result.error;
         }
       } catch (err) {
-        error.value = 'An error occurred during registration';
+        error.value = t('auth.registrationError');
       } finally {
         loading.value = false;
       }

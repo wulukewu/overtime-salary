@@ -1,195 +1,162 @@
 <template>
   <div class="import-export-container">
-    <h1>Import/Export Records</h1>
-
-    <div class="card">
-      <h2>Export Records</h2>
-      <p>
-        Download all your overtime records as a CSV file. The file will include
-        your salary, end hour, minutes, calculated pay, and group information.
-      </p>
-      <button @click="exportRecords" class="btn btn-primary">
-        Export Records
-      </button>
-    </div>
-
-    <div class="card">
-      <h2>Import Records</h2>
-      <p>
-        Import overtime records from a CSV file. Make sure your file follows the
-        template format.
-      </p>
-      <p class="note">
-        Required fields: Date, Salary, End Hour, Minutes. Group is optional.
-      </p>
-
+    <h1>{{ $t('importExport.title') }}</h1>
+    <div class="import-export-content">
       <div class="import-section">
-        <label class="file-input">
-          <span class="file-input-text">Choose File</span>
+        <h2>{{ $t('importExport.import') }}</h2>
+        <div class="file-input">
           <input
             type="file"
-            accept=".csv"
             @change="handleFileSelect"
+            accept=".json,.csv"
             ref="fileInput"
           />
-        </label>
-        <button
-          @click="importRecords"
-          class="btn btn-primary"
-          :disabled="!selectedFile"
-        >
-          Import Records
-        </button>
-      </div>
-
-      <div v-if="importResult" class="import-result">
-        <h3>Import Results</h3>
-        <p>Successfully imported: {{ importResult.imported }} records</p>
-        <div v-if="importResult.errors.length > 0">
-          <h4>Errors:</h4>
-          <ul>
-            <li v-for="(error, index) in importResult.errors" :key="index">
-              {{ error.error }}
-              <div v-if="error.row" class="error-row">
-                <pre>{{ JSON.stringify(error.row, null, 2) }}</pre>
-              </div>
-            </li>
-          </ul>
+          <button @click="importRecords" :disabled="!selectedFile || importing">
+            {{ importing ? $t('common.loading') : $t('importExport.import') }}
+          </button>
+        </div>
+        <div v-if="importError" class="error-message">{{ importError }}</div>
+        <div v-if="importSuccess" class="success-message">
+          {{ $t('importExport.importSuccess') }}
         </div>
       </div>
-    </div>
 
-    <div class="card">
-      <h2>CSV Template</h2>
-      <p>
-        Download a template CSV file to help you format your data correctly.
-      </p>
-      <p class="note">
-        The template includes example values. Replace them with your actual
-        data.
-      </p>
-      <button @click="downloadTemplate" class="btn btn-secondary">
-        Download Template
-      </button>
+      <div class="export-section">
+        <h2>{{ $t('importExport.export') }}</h2>
+        <div class="export-options">
+          <div class="format-select">
+            <label>{{ $t('importExport.format') }}:</label>
+            <select v-model="exportFormat">
+              <option value="json">{{ $t('importExport.json') }}</option>
+              <option value="csv">{{ $t('importExport.csv') }}</option>
+            </select>
+          </div>
+          <button @click="exportRecords" :disabled="exporting">
+            {{ exporting ? $t('common.loading') : $t('importExport.export') }}
+          </button>
+        </div>
+        <div v-if="exportError" class="error-message">{{ exportError }}</div>
+        <div v-if="exportSuccess" class="success-message">
+          {{ $t('importExport.exportSuccess') }}
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import axios from 'axios';
-import { useStore } from 'vuex';
-import config from '../config';
 import { ref } from 'vue';
+import { useStore } from 'vuex';
+import { useI18n } from 'vue-i18n';
+import config from '../config';
 
 export default {
   name: 'ImportExport',
   setup() {
     const store = useStore();
+    const { t } = useI18n();
     const selectedFile = ref(null);
-    const importResult = ref(null);
+    const importing = ref(false);
+    const exporting = ref(false);
+    const importError = ref('');
+    const exportError = ref('');
+    const importSuccess = ref(false);
+    const exportSuccess = ref(false);
+    const exportFormat = ref('json');
+    const fileInput = ref(null);
 
     const handleFileSelect = (event) => {
       selectedFile.value = event.target.files[0];
+      importError.value = '';
+      importSuccess.value = false;
     };
 
     const importRecords = async () => {
-      if (!selectedFile.value) {
-        store.dispatch('notification/showNotification', {
-          message: 'Please select a file first.',
-          duration: 3000,
-        });
-        return;
-      }
+      if (!selectedFile.value) return;
 
-      const formData = new FormData();
-      formData.append('file', selectedFile.value);
+      importing.value = true;
+      importError.value = '';
+      importSuccess.value = false;
 
       try {
-        const response = await axios.post(
-          `${config.apiUrl}/api/overtime/import-csv`,
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${store.state.token}`,
-            },
-          }
-        );
+        const formData = new FormData();
+        formData.append('file', selectedFile.value);
 
-        importResult.value = response.data;
-        selectedFile.value = null;
-        document.querySelector('input[type="file"]').value = '';
-      } catch (error) {
-        console.error('Error importing records:', error);
-        store.dispatch('notification/showNotification', {
-          message:
-            'Failed to import records. Please check your file format and try again.',
-          duration: 3000,
+        const response = await fetch(`${config.apiUrl}/api/overtime/import`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${store.state.token}`,
+          },
+          body: formData,
         });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || t('importExport.importError'));
+        }
+
+        importSuccess.value = true;
+        fileInput.value.value = '';
+        selectedFile.value = null;
+      } catch (err) {
+        importError.value = err.message;
+      } finally {
+        importing.value = false;
       }
     };
 
-    const downloadTemplate = async () => {
+    const exportRecords = async () => {
+      exporting.value = true;
+      exportError.value = '';
+      exportSuccess.value = false;
+
       try {
-        const response = await axios.get(
-          `${config.apiUrl}/api/overtime/csv-template`,
+        const response = await fetch(
+          `${config.apiUrl}/api/overtime/export?format=${exportFormat.value}`,
           {
-            responseType: 'blob',
             headers: {
               Authorization: `Bearer ${store.state.token}`,
             },
           }
         );
 
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'overtime_template.csv');
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      } catch (error) {
-        console.error('Error downloading template:', error);
-        store.dispatch('notification/showNotification', {
-          message: 'Failed to download template. Please try again.',
-          duration: 3000,
-        });
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || t('importExport.exportError'));
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `overtime-records.${exportFormat.value}`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        exportSuccess.value = true;
+      } catch (err) {
+        exportError.value = err.message;
+      } finally {
+        exporting.value = false;
       }
     };
 
     return {
       selectedFile,
-      importResult,
+      importing,
+      exporting,
+      importError,
+      exportError,
+      importSuccess,
+      exportSuccess,
+      exportFormat,
+      fileInput,
       handleFileSelect,
       importRecords,
-      downloadTemplate,
+      exportRecords,
     };
-  },
-  methods: {
-    async exportRecords() {
-      try {
-        const response = await axios.get(
-          `${config.apiUrl}/api/overtime/export-csv`,
-          {
-            responseType: 'blob',
-            headers: {
-              Authorization: `Bearer ${this.store.state.token}`,
-            },
-          }
-        );
-
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'overtime_records.csv');
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      } catch (error) {
-        console.error('Error exporting records:', error);
-        alert('Failed to export records. Please try again.');
-      }
-    },
   },
 };
 </script>
@@ -198,161 +165,73 @@ export default {
 .import-export-container {
   max-width: 800px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 2rem;
 }
 
-.card {
+.import-export-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.import-section,
+.export-section {
   background: white;
+  padding: 2rem;
   border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-h1 {
-  margin-bottom: 30px;
-  color: #2c3e50;
+.file-input {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
-h2 {
-  color: #2c3e50;
-  margin-bottom: 15px;
+.export-options {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
-p {
-  color: #666;
-  margin-bottom: 15px;
-  line-height: 1.5;
+.format-select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.note {
-  font-size: 0.9em;
-  color: #666;
-  font-style: italic;
+select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
 }
 
-.btn {
-  height: 42px;
-  padding: 0 20px;
-  min-width: 120px;
+button {
+  padding: 0.75rem;
+  background-color: #4caf50;
+  color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
+  font-size: 1rem;
 }
 
-.btn-primary {
-  background-color: #4caf50;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #45a049;
-}
-
-.btn-primary:disabled {
+button:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
 }
 
-.btn-secondary {
-  background-color: #2196f3;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background-color: #1976d2;
-}
-
-.import-section {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-  justify-content: center;
-  margin: 20px 0;
-  padding: 0 20px;
-}
-
-.file-input {
-  position: relative;
-  display: inline-block;
-  height: 42px;
-  min-width: 120px;
-}
-
-.file-input input[type='file'] {
-  position: absolute;
-  left: 0;
-  top: 0;
-  opacity: 0;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-}
-
-.file-input-text {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 42px;
-  padding: 0 20px;
-  background-color: #f8f9fa;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  color: #666;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-sizing: border-box;
-  width: 100%;
-  text-align: center;
-}
-
-.file-input:hover .file-input-text {
-  background-color: #e9ecef;
-  border-color: #ccc;
-}
-
-.file-input input[type='file']:focus + .file-input-text {
-  outline: 2px solid #4caf50;
-  outline-offset: 2px;
-}
-
-.import-result {
-  margin-top: 20px;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-}
-
-.import-result h3 {
-  color: #2c3e50;
-  margin-bottom: 10px;
-}
-
-.import-result h4 {
+.error-message {
   color: #dc3545;
-  margin: 15px 0 10px;
+  margin-top: 1rem;
 }
 
-.error-row {
-  margin: 10px 0;
-  padding: 10px;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.error-row pre {
-  margin: 0;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  font-size: 0.9em;
-  color: #666;
+.success-message {
+  color: #28a745;
+  margin-top: 1rem;
 }
 </style>

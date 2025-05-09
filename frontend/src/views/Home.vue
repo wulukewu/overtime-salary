@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <h1>Overtime Pay Calculator</h1>
+    <h1>{{ $t('home.title') }}</h1>
     <div class="calculator-section">
       <form
         @submit.prevent="calculateOvertime"
@@ -8,7 +8,7 @@
         novalidate
       >
         <div class="form-group">
-          <label for="salary">Monthly Salary:</label>
+          <label for="salary">{{ $t('home.monthlySalary') }}:</label>
           <input
             type="number"
             id="salary"
@@ -20,7 +20,7 @@
           <span v-if="salaryError" class="field-error">{{ salaryError }}</span>
         </div>
         <div class="form-group">
-          <label for="end_hour">Overtime End Hour (24h):</label>
+          <label for="end_hour">{{ $t('home.overtimeEndHour') }}:</label>
           <input
             type="number"
             id="end_hour"
@@ -34,7 +34,7 @@
           }}</span>
         </div>
         <div class="form-group">
-          <label for="minutes">Overtime Minutes:</label>
+          <label for="minutes">{{ $t('home.overtimeMinutes') }}:</label>
           <input
             type="number"
             id="minutes"
@@ -49,33 +49,32 @@
           }}</span>
         </div>
         <button type="submit" :disabled="loading">
-          {{ loading ? 'Calculating...' : 'Calculate' }}
+          {{ loading ? $t('home.calculating') : $t('home.calculate') }}
         </button>
         <div v-if="result !== null" class="result">
           <h3 v-if="result === 0" class="zero-result">
-            No overtime pay (End time is 19:00)
+            {{ $t('home.noOvertimePay') }}
           </h3>
-          <h3 v-else>Calculated Overtime Pay: {{ result }}</h3>
+          <h3 v-else>{{ $t('home.calculatedOvertimePay') }}: {{ result }}</h3>
         </div>
         <div v-if="error" class="error-message">{{ error }}</div>
       </form>
     </div>
     <div class="info-section">
-      <h2>About Overtime Pay</h2>
-      <p>
-        This calculator helps you estimate your overtime pay based on your
-        monthly salary and overtime hours. The calculation follows standard
-        overtime pay rules where overtime hours are compensated at a higher
-        rate.
-      </p>
+      <h2>{{ $t('home.aboutTitle') }}</h2>
+      <p>{{ $t('home.aboutText') }}</p>
       <p v-if="!isLoggedIn">
-        To save your calculations and access more features, please
-        <router-link to="/register">create an account</router-link> or
-        <router-link to="/login">login</router-link>.
+        {{ $t('home.toSaveCalculations') }}
+        <router-link to="/register">{{ $t('home.createAccount') }}</router-link>
+        {{ $t('common.or') }}
+        <router-link to="/login">{{ $t('home.login') }}</router-link
+        >.
       </p>
       <p v-else>
-        <a href="#" @click.prevent="goToDashboard">Go to Dashboard</a> to view
-        your saved calculations and access more features.
+        <a href="#" @click.prevent="goToDashboard">{{
+          $t('home.goToDashboard')
+        }}</a>
+        {{ $t('home.dashboardText') }}
       </p>
     </div>
   </div>
@@ -85,6 +84,7 @@
 import { ref, computed } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import config from '../config';
 
 export default {
@@ -92,6 +92,7 @@ export default {
   setup() {
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
     const salary = ref(30000);
     const end_hour = ref(19);
     const minutes = ref(0);
@@ -114,11 +115,11 @@ export default {
         salary.value === undefined ||
         salary.value === ''
       ) {
-        salaryError.value = 'Please enter a monthly salary';
+        salaryError.value = t('home.validation.enterSalary');
         return false;
       }
       if (salary.value < 0) {
-        salaryError.value = 'Salary cannot be negative';
+        salaryError.value = t('home.validation.negativeSalary');
         return false;
       }
       salaryError.value = '';
@@ -131,11 +132,11 @@ export default {
         end_hour.value === undefined ||
         end_hour.value === ''
       ) {
-        endHourError.value = 'Please enter an end hour';
+        endHourError.value = t('home.validation.enterEndHour');
         return false;
       }
       if (end_hour.value < 19) {
-        endHourError.value = 'End hour must be 19 or later';
+        endHourError.value = t('home.validation.endHourTooEarly');
         return false;
       }
       endHourError.value = '';
@@ -148,11 +149,11 @@ export default {
         minutes.value === undefined ||
         minutes.value === ''
       ) {
-        minutesError.value = 'Please enter minutes';
+        minutesError.value = t('home.validation.enterMinutes');
         return false;
       }
       if (minutes.value < 0 || minutes.value > 59) {
-        minutesError.value = 'Minutes must be between 0 and 59';
+        minutesError.value = t('home.validation.invalidMinutes');
         return false;
       }
       minutesError.value = '';
@@ -189,7 +190,7 @@ export default {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to calculate overtime');
+          throw new Error(data.error || t('common.error'));
         }
         result.value = Math.round(data.result);
       } catch (err) {
