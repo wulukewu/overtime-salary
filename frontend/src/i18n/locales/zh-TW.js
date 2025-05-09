@@ -57,6 +57,7 @@ export default {
     },
   },
   auth: {
+    login: '登入',
     username: '使用者名稱',
     password: '密碼',
     email: '電子郵件',

@@ -58,6 +58,7 @@ export default {
     },
   },
   auth: {
+    login: 'Login',
     username: 'Username',
     password: 'Password',
     email: 'Email',
