@@ -127,15 +127,22 @@ export default {
         });
 
         if (!response.ok) {
-          throw new Error(t('profile.error'));
+          const errorData = await response.json();
+          throw new Error(errorData.error || t('profile.error'));
         }
 
         const data = await response.json();
-        name.value = data.name;
-        email.value = data.email;
-        username.value = data.username;
+        console.log('Profile data received:', data);
+        name.value = data.name || '';
+        email.value = data.email || '';
+        username.value = data.username || '';
       } catch (err) {
+        console.error('Error fetching profile:', err);
         error.value = err.message;
+        store.dispatch('notification/showNotification', {
+          message: t('profile.error'),
+          duration: 3000,
+        });
       }
     };
 

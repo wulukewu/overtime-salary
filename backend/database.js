@@ -22,14 +22,15 @@ const initDatabase = async () => {
       db.run(`
         CREATE TABLE IF NOT EXISTS users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT,
           email TEXT UNIQUE NOT NULL,
           username TEXT UNIQUE NOT NULL,
           password TEXT NOT NULL,
           monthly_salary REAL DEFAULT 0,
-          is_admin BOOLEAN DEFAULT 0,
+          is_admin INTEGER DEFAULT 0,
           force_password_change INTEGER DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          ungrouped_collapsed BOOLEAN DEFAULT 0
+          ungrouped_collapsed INTEGER DEFAULT 0
         )
       `);
 
@@ -77,8 +78,8 @@ const initDatabase = async () => {
             const hashedPassword = await bcrypt.hash('admin', SALT_ROUNDS);
             await new Promise((resolve, reject) => {
               db.run(
-                'INSERT INTO users (email, username, password, is_admin) VALUES (?, ?, ?, ?)',
-                ['admin@system.local', 'admin', hashedPassword, 1],
+                'INSERT INTO users (email, username, password, is_admin, name) VALUES (?, ?, ?, ?, ?)',
+                ['admin@system.local', 'admin', hashedPassword, 1, 'Admin'],
                 function (err) {
                   if (err) reject(err);
                   else resolve(this);
@@ -93,6 +94,54 @@ const initDatabase = async () => {
             console.error('Error creating admin user:', error);
             reject(error);
             return;
+          }
+        } else {
+          // Check if admin user exists
+          const admin = await get('SELECT * FROM users WHERE email = ?', [
+            'admin@system.local',
+          ]);
+
+          if (!admin) {
+            // Create admin user
+            const hashedPassword = await bcrypt.hash('admin', SALT_ROUNDS);
+            await run(
+              'INSERT INTO users (email, username, password, is_admin, name) VALUES (?, ?, ?, ?, ?)',
+              ['admin@system.local', 'admin', hashedPassword, 1, 'Admin']
+            );
+            console.log('Admin user created with credentials:');
+            console.log('Email: admin@system.local');
+            console.log('Username: admin');
+            console.log('Password: admin');
+          } else if (!admin.name) {
+            // Update admin's name if it's not set
+            await run('UPDATE users SET name = ? WHERE email = ?', [
+              'Admin',
+              'admin@system.local',
+            ]);
+            console.log('Admin name updated to "Admin"');
+          }
+
+          // Add name column if it doesn't exist
+          try {
+            await run('ALTER TABLE users ADD COLUMN name TEXT');
+            console.log('Added name column to users table');
+          } catch (error) {
+            // Column might already exist, which is fine
+            if (!error.message.includes('duplicate column name')) {
+              throw error;
+            }
+          }
+
+          // Set default names for existing users
+          const users = await all(
+            'SELECT id, username FROM users WHERE name IS NULL'
+          );
+          for (const user of users) {
+            await run('UPDATE users SET name = ? WHERE id = ?', [
+              user.username,
+              user.id,
+            ]);
+            console.log(`Set default name for user ${user.username}`);
           }
         }
 

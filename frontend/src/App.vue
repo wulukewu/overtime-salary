@@ -6,9 +6,15 @@
           <img src="@/assets/logo.png" alt="Logo" class="logo" />
         </router-link>
         <router-link to="/">{{ $t('nav.home') }}</router-link>
-        <router-link to="/dashboard" v-if="isAuthenticated">{{ $t('nav.dashboard') }}</router-link>
-        <router-link to="/import-export" v-if="isAuthenticated">{{ $t('nav.importExport') }}</router-link>
-        <router-link to="/admin" v-if="isAdmin">{{ $t('nav.adminPanel') }}</router-link>
+        <router-link to="/dashboard" v-if="isAuthenticated">{{
+          $t('nav.dashboard')
+        }}</router-link>
+        <router-link to="/import-export" v-if="isAuthenticated">{{
+          $t('nav.importExport')
+        }}</router-link>
+        <router-link to="/admin" v-if="isAdmin">{{
+          $t('nav.adminPanel')
+        }}</router-link>
       </div>
       <div class="nav-right">
         <div class="language-switcher">
@@ -72,7 +78,9 @@ export default {
     const router = useRouter();
     const { locale } = useI18n();
     const showDropdown = ref(false);
-    const username = computed(() => store.state.user?.username || '');
+    const username = computed(
+      () => store.state.user?.name || store.state.user?.username || ''
+    );
 
     const isAuthenticated = computed(() => store.state.token !== null);
     const isAdmin = computed(() => store.state.isAdmin);
