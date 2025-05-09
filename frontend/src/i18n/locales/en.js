@@ -151,18 +151,30 @@ export default {
     error: 'Failed to save settings',
   },
   importExport: {
-    title: 'Import/Export',
+    title: 'Import/Export Records',
     import: 'Import Records',
     export: 'Export Records',
-    importSuccess: 'Records imported successfully',
-    importError: 'Failed to import records',
-    exportSuccess: 'Records exported successfully',
-    exportError: 'Failed to export records',
-    selectFile: 'Select File',
-    download: 'Download',
-    format: 'Format',
-    json: 'JSON',
-    csv: 'CSV',
+    importDescription:
+      'Import overtime records from a CSV file. Make sure your file follows the template format.',
+    exportDescription:
+      'Download all your overtime records as a CSV file. The file will include your salary, end hour, minutes, calculated pay, and group information.',
+    requiredFields:
+      'Required fields: Date, Salary, End Hour, Minutes. Group is optional.',
+    chooseFile: 'Choose File',
+    importResults: 'Import Results',
+    successfullyImported: 'Successfully imported: {count} records',
+    errors: 'Errors',
+    csvTemplate: 'CSV Template',
+    templateDescription:
+      'Download a template CSV file to help you format your data correctly.',
+    templateNote:
+      'The template includes example values. Replace them with your actual data.',
+    downloadTemplate: 'Download Template',
+    selectFileFirst: 'Please select a file first.',
+    importError:
+      'Failed to import records. Please check your file format and try again.',
+    exportError: 'Failed to export records. Please try again.',
+    templateError: 'Failed to download template. Please try again.',
   },
   admin: {
     title: 'Admin Dashboard',
