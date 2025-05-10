@@ -1,31 +1,25 @@
 <template>
   <div class="import-export-container">
-    <h1>Import/Export Records</h1>
+    <h1>{{ $t('importExport.title') }}</h1>
 
     <div class="card">
-      <h2>Export Records</h2>
-      <p>
-        Download all your overtime records as a CSV file. The file will include
-        your salary, end hour, minutes, calculated pay, and group information.
-      </p>
+      <h2>{{ $t('importExport.export') }}</h2>
+      <p>{{ $t('importExport.exportDescription') }}</p>
       <button @click="exportRecords" class="btn btn-primary">
-        Export Records
+        {{ $t('importExport.export') }}
       </button>
     </div>
 
     <div class="card">
-      <h2>Import Records</h2>
-      <p>
-        Import overtime records from a CSV file. Make sure your file follows the
-        template format.
-      </p>
-      <p class="note">
-        Required fields: Date, Salary, End Hour, Minutes. Group is optional.
-      </p>
+      <h2>{{ $t('importExport.import') }}</h2>
+      <p>{{ $t('importExport.importDescription') }}</p>
+      <p class="note">{{ $t('importExport.requiredFields') }}</p>
 
       <div class="import-section">
         <label class="file-input">
-          <span class="file-input-text">Choose File</span>
+          <span class="file-input-text">{{
+            $t('importExport.chooseFile')
+          }}</span>
           <input
             type="file"
             accept=".csv"
@@ -38,15 +32,21 @@
           class="btn btn-primary"
           :disabled="!selectedFile"
         >
-          Import Records
+          {{ $t('importExport.import') }}
         </button>
       </div>
 
       <div v-if="importResult" class="import-result">
-        <h3>Import Results</h3>
-        <p>Successfully imported: {{ importResult.imported }} records</p>
+        <h3>{{ $t('importExport.importResults') }}</h3>
+        <p>
+          {{
+            $t('importExport.successfullyImported', {
+              count: importResult.imported,
+            })
+          }}
+        </p>
         <div v-if="importResult.errors.length > 0">
-          <h4>Errors:</h4>
+          <h4>{{ $t('importExport.errors') }}:</h4>
           <ul>
             <li v-for="(error, index) in importResult.errors" :key="index">
               {{ error.error }}
@@ -60,16 +60,11 @@
     </div>
 
     <div class="card">
-      <h2>CSV Template</h2>
-      <p>
-        Download a template CSV file to help you format your data correctly.
-      </p>
-      <p class="note">
-        The template includes example values. Replace them with your actual
-        data.
-      </p>
+      <h2>{{ $t('importExport.csvTemplate') }}</h2>
+      <p>{{ $t('importExport.templateDescription') }}</p>
+      <p class="note">{{ $t('importExport.templateNote') }}</p>
       <button @click="downloadTemplate" class="btn btn-secondary">
-        Download Template
+        {{ $t('importExport.downloadTemplate') }}
       </button>
     </div>
   </div>
@@ -78,6 +73,7 @@
 <script>
 import axios from 'axios';
 import { useStore } from 'vuex';
+import { useI18n } from 'vue-i18n';
 import config from '../config';
 import { ref } from 'vue';
 
@@ -85,6 +81,7 @@ export default {
   name: 'ImportExport',
   setup() {
     const store = useStore();
+    const { t } = useI18n();
     const selectedFile = ref(null);
     const importResult = ref(null);
 
@@ -95,7 +92,7 @@ export default {
     const importRecords = async () => {
       if (!selectedFile.value) {
         store.dispatch('notification/showNotification', {
-          message: 'Please select a file first.',
+          message: t('importExport.selectFileFirst'),
           duration: 3000,
         });
         return;
@@ -122,8 +119,7 @@ export default {
       } catch (error) {
         console.error('Error importing records:', error);
         store.dispatch('notification/showNotification', {
-          message:
-            'Failed to import records. Please check your file format and try again.',
+          message: t('importExport.importError'),
           duration: 3000,
         });
       }
@@ -151,29 +147,20 @@ export default {
       } catch (error) {
         console.error('Error downloading template:', error);
         store.dispatch('notification/showNotification', {
-          message: 'Failed to download template. Please try again.',
+          message: t('importExport.templateError'),
           duration: 3000,
         });
       }
     };
 
-    return {
-      selectedFile,
-      importResult,
-      handleFileSelect,
-      importRecords,
-      downloadTemplate,
-    };
-  },
-  methods: {
-    async exportRecords() {
+    const exportRecords = async () => {
       try {
         const response = await axios.get(
           `${config.apiUrl}/api/overtime/export-csv`,
           {
             responseType: 'blob',
             headers: {
-              Authorization: `Bearer ${this.store.state.token}`,
+              Authorization: `Bearer ${store.state.token}`,
             },
           }
         );
@@ -187,9 +174,21 @@ export default {
         link.remove();
       } catch (error) {
         console.error('Error exporting records:', error);
-        alert('Failed to export records. Please try again.');
+        store.dispatch('notification/showNotification', {
+          message: t('importExport.exportError'),
+          duration: 3000,
+        });
       }
-    },
+    };
+
+    return {
+      selectedFile,
+      importResult,
+      handleFileSelect,
+      importRecords,
+      downloadTemplate,
+      exportRecords,
+    };
   },
 };
 </script>

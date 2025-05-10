@@ -1,33 +1,34 @@
 <template>
   <div class="login-container">
-    <h2>Login</h2>
+    <h2>{{ $t('auth.login') }}</h2>
     <form class="login-form" @submit.prevent="handleLogin">
       <div class="form-group">
-        <label for="login">Username or Email</label>
+        <label for="login">{{ $t('auth.username') }}</label>
         <input
           type="text"
           id="login"
           v-model="login"
           required
-          placeholder="Enter your username or email"
+          :placeholder="$t('auth.username')"
         />
       </div>
       <div class="form-group">
-        <label for="password">Password</label>
+        <label for="password">{{ $t('auth.password') }}</label>
         <input
           type="password"
           id="password"
           v-model="password"
           required
-          placeholder="Enter your password"
+          :placeholder="$t('auth.password')"
         />
       </div>
       <button type="submit" :disabled="loading">
-        {{ loading ? 'Logging in...' : 'Login' }}
+        {{ loading ? $t('common.loading') : $t('auth.login') }}
       </button>
     </form>
     <p class="register-link">
-      Don't have an account? <router-link to="/register">Register</router-link>
+      {{ $t('auth.noAccount') }}
+      <router-link to="/register">{{ $t('auth.register') }}</router-link>
     </p>
   </div>
 </template>
@@ -36,12 +37,14 @@
 import { ref } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 
 export default {
   name: 'LoginPage',
   setup() {
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
     const loginInput = ref('');
     const password = ref('');
     const loading = ref(false);
@@ -59,14 +62,14 @@ export default {
         } else {
           console.error('Login failed:', result.error);
           store.dispatch('notification/showNotification', {
-            message: result.error || 'Login failed',
+            message: result.error || t('auth.loginFailed'),
             duration: 3000,
           });
         }
       } catch (error) {
         console.error('Login error:', error);
         store.dispatch('notification/showNotification', {
-          message: 'Login failed. Please try again.',
+          message: t('auth.loginFailed'),
           duration: 3000,
         });
       } finally {

@@ -1,10 +1,10 @@
 <template>
   <div class="admin-container">
-    <h1>Admin Dashboard</h1>
+    <h1>{{ $t('admin.title') }}</h1>
     <div class="admin-content">
       <div class="users-section">
-        <h2>User Management</h2>
-        <div v-if="loading" class="loading">Loading users...</div>
+        <h2>{{ $t('admin.userManagement') }}</h2>
+        <div v-if="loading" class="loading">{{ $t('admin.loadingUsers') }}</div>
         <div v-else-if="error" class="error-message">{{ error }}</div>
         <div v-else class="users-list">
           <div v-for="user in users" :key="user.id" class="user-item">
@@ -17,7 +17,7 @@
                   :class="{ 'is-admin': user.is_admin }"
                   @click="toggleUserRole(user)"
                 >
-                  {{ user.is_admin ? 'Admin' : 'User' }}
+                  {{ user.is_admin ? $t('admin.admin') : $t('admin.user') }}
                 </button>
               </div>
             </div>
@@ -26,7 +26,7 @@
                 @click="showPasswordModal(user)"
                 class="change-password-btn"
               >
-                Change Password
+                {{ $t('admin.changePassword') }}
               </button>
               <button
                 @click="resetPassword(user.id)"
@@ -35,8 +35,8 @@
               >
                 {{
                   resettingPassword === user.id
-                    ? 'Resetting...'
-                    : 'Reset Password'
+                    ? $t('admin.resetting')
+                    : $t('admin.resetPassword')
                 }}
               </button>
               <button
@@ -44,7 +44,11 @@
                 :disabled="deletingUser === user.id"
                 class="delete-btn"
               >
-                {{ deletingUser === user.id ? 'Deleting...' : 'Delete User' }}
+                {{
+                  deletingUser === user.id
+                    ? $t('admin.deleting')
+                    : $t('admin.deleteUser')
+                }}
               </button>
             </div>
           </div>
@@ -55,64 +59,58 @@
     <!-- Password Change Modal -->
     <div v-if="showPasswordChangeModal" class="modal">
       <div class="modal-content">
-        <h3>Change Password for {{ selectedUser?.username }}</h3>
-        <div class="form-group">
-          <label for="newPassword">New Password:</label>
-          <input
-            type="password"
-            id="newPassword"
-            v-model="newPassword"
-            placeholder="Enter new password"
-          />
-          <div
-            v-if="newPassword && newPassword.length < 6"
-            class="validation-message"
-          >
-            Password must be at least 6 characters long
+        <h3>{{ $t('admin.passwordChange') }}</h3>
+        <form @submit.prevent="changePassword">
+          <div class="form-group">
+            <label for="newPassword">{{ $t('admin.newPassword') }}:</label>
+            <input
+              type="password"
+              id="newPassword"
+              v-model="newPassword"
+              required
+              minlength="6"
+            />
           </div>
-        </div>
-        <div class="form-group">
-          <label for="confirmPassword">Confirm Password:</label>
-          <input
-            type="password"
-            id="confirmPassword"
-            v-model="confirmPassword"
-            placeholder="Confirm new password"
-          />
-          <div
-            v-if="confirmPassword && newPassword !== confirmPassword"
-            class="validation-message"
-          >
-            Passwords do not match
+          <div class="form-group">
+            <label for="confirmPassword"
+              >{{ $t('admin.confirmPassword') }}:</label
+            >
+            <input
+              type="password"
+              id="confirmPassword"
+              v-model="confirmPassword"
+              required
+              minlength="6"
+            />
           </div>
-        </div>
-        <div class="modal-actions">
-          <button
-            @click="changePassword"
-            :disabled="!isPasswordValid"
-            class="save-btn"
-          >
-            Save
-          </button>
-          <button @click="closePasswordModal" class="cancel-btn">Cancel</button>
-        </div>
-        <div v-if="passwordError" class="error-message">
-          {{ passwordError }}
-        </div>
+          <div v-if="passwordError" class="error-message">
+            {{ passwordError }}
+          </div>
+          <div class="modal-actions">
+            <button type="submit" :disabled="!validatePassword()">
+              {{ $t('admin.update') }}
+            </button>
+            <button type="button" @click="closePasswordModal">
+              {{ $t('admin.cancel') }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from 'vue-i18n';
 import config from '../config';
 
 export default {
   name: 'AdminDashboard',
   setup() {
     const store = useStore();
+    const { t } = useI18n();
     const users = ref([]);
     const loading = ref(true);
     const error = ref('');
@@ -124,15 +122,22 @@ export default {
     const confirmPassword = ref('');
     const passwordError = ref('');
 
-    const isPasswordValid = computed(() => {
+    const validatePassword = () => {
       if (!newPassword.value || !confirmPassword.value) {
+        passwordError.value = t('admin.validation.passwordRequired');
         return false;
       }
-      return (
-        newPassword.value.length >= 6 &&
-        newPassword.value === confirmPassword.value
-      );
-    });
+      if (newPassword.value.length < 6) {
+        passwordError.value = t('admin.validation.passwordTooShort');
+        return false;
+      }
+      if (newPassword.value !== confirmPassword.value) {
+        passwordError.value = t('admin.validation.passwordsDoNotMatch');
+        return false;
+      }
+      passwordError.value = '';
+      return true;
+    };
 
     const showPasswordModal = (user) => {
       selectedUser.value = user;
@@ -303,7 +308,7 @@ export default {
       newPassword,
       confirmPassword,
       passwordError,
-      isPasswordValid,
+      validatePassword,
       showPasswordModal,
       closePasswordModal,
       changePassword,

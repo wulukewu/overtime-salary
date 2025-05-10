@@ -5,16 +5,23 @@
         <router-link to="/" exact-active-class="no-active-style">
           <img src="@/assets/logo.png" alt="Logo" class="logo" />
         </router-link>
-        <router-link to="/">Home</router-link>
-        <router-link to="/dashboard" v-if="isAuthenticated"
-          >Dashboard</router-link
-        >
-        <router-link to="/import-export" v-if="isAuthenticated"
-          >Import/Export</router-link
-        >
-        <router-link to="/admin" v-if="isAdmin">Admin Panel</router-link>
+        <router-link to="/">{{ $t('nav.home') }}</router-link>
+        <router-link to="/dashboard" v-if="isAuthenticated">{{
+          $t('nav.dashboard')
+        }}</router-link>
+        <router-link to="/import-export" v-if="isAuthenticated">{{
+          $t('nav.importExport')
+        }}</router-link>
+        <router-link to="/admin" v-if="isAdmin">{{
+          $t('nav.adminPanel')
+        }}</router-link>
       </div>
       <div class="nav-right">
+        <div class="language-switcher">
+          <button @click="toggleLanguage" class="lang-btn">
+            {{ currentLanguage === 'en' ? 'English' : '中文' }}
+          </button>
+        </div>
         <template v-if="isAuthenticated">
           <div class="user-dropdown">
             <span
@@ -31,15 +38,15 @@
               @mouseover="showDropdown = true"
               @mouseleave="showDropdown = false"
             >
-              <router-link to="/profile">Profile</router-link>
-              <router-link to="/settings">Settings</router-link>
-              <a @click="logout">Logout</a>
+              <router-link to="/profile">{{ $t('nav.profile') }}</router-link>
+              <router-link to="/settings">{{ $t('nav.settings') }}</router-link>
+              <a @click="logout">{{ $t('nav.logout') }}</a>
             </div>
           </div>
         </template>
         <template v-else>
-          <router-link to="/login">Login</router-link>
-          <router-link to="/register">Register</router-link>
+          <router-link to="/login">{{ $t('nav.login') }}</router-link>
+          <router-link to="/register">{{ $t('nav.register') }}</router-link>
         </template>
       </div>
     </nav>
@@ -57,6 +64,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import config from './config';
 import CustomNotification from './components/CustomNotification.vue';
 
@@ -68,12 +76,22 @@ export default {
   setup() {
     const store = useStore();
     const router = useRouter();
+    const { locale } = useI18n();
     const showDropdown = ref(false);
-    const username = computed(() => store.state.user?.username || '');
+    const username = computed(
+      () => store.state.user?.name || store.state.user?.username || ''
+    );
 
     const isAuthenticated = computed(() => store.state.token !== null);
     const isAdmin = computed(() => store.state.isAdmin);
     const notification = computed(() => store.state.notification);
+    const currentLanguage = computed(() => locale.value);
+
+    const toggleLanguage = () => {
+      const newLocale = locale.value === 'en' ? 'zh-TW' : 'en';
+      locale.value = newLocale;
+      localStorage.setItem('language', newLocale);
+    };
 
     const hideNotification = () => {
       store.dispatch('notification/hideNotification');
@@ -123,6 +141,8 @@ export default {
       logout,
       notification,
       hideNotification,
+      currentLanguage,
+      toggleLanguage,
     };
   },
 };
@@ -232,5 +252,25 @@ nav a.router-link-exact-active {
 .no-active-style {
   background: none !important;
   color: inherit !important;
+}
+
+.language-switcher {
+  margin-right: 20px;
+}
+
+.lang-btn {
+  padding: 8px 16px;
+  border: 1px solid #2c3e50;
+  border-radius: 4px;
+  background-color: transparent;
+  color: #2c3e50;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.lang-btn:hover {
+  background-color: #2c3e50;
+  color: white;
 }
 </style>

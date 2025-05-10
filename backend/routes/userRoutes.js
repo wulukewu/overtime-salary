@@ -26,13 +26,13 @@ const isAdmin = async (req, res, next) => {
 // Register a new user
 router.post('/register', async (req, res) => {
   try {
-    const { email, username, password } = req.body;
+    const { email, username, password, name } = req.body;
 
     // Validate input
-    if (!email || !username || !password) {
+    if (!email || !username || !password || !name) {
       return res
         .status(400)
-        .json({ error: 'Email, username, and password are required' });
+        .json({ error: 'Email, username, password, and name are required' });
     }
 
     // Check if email or username already exists
@@ -55,8 +55,8 @@ router.post('/register', async (req, res) => {
 
     // Create user
     const result = await run(
-      'INSERT INTO users (email, username, password) VALUES (?, ?, ?)',
-      [email, username, hashedPassword]
+      'INSERT INTO users (email, username, password, name) VALUES (?, ?, ?, ?)',
+      [email, username, hashedPassword, name]
     );
 
     res.status(201).json({
@@ -215,30 +215,27 @@ router.delete('/users/:id', authenticate, isAdmin, async (req, res) => {
 });
 
 // Update user profile
-router.put('/profile', authenticate, (req, res) => {
+router.put('/profile', authenticate, async (req, res) => {
   const { name } = req.body;
 
   if (!name) {
     return res.status(400).json({ error: 'Name is required' });
   }
 
-  db.run(
-    'UPDATE users SET name = ? WHERE id = ?',
-    [name, req.userId],
-    (err) => {
-      if (err) {
-        return res.status(500).json({ error: 'Error updating profile' });
-      }
-      res.json({ message: 'Profile updated successfully' });
-    }
-  );
+  try {
+    await run('UPDATE users SET name = ? WHERE id = ?', [name, req.userId]);
+    res.json({ message: 'Profile updated successfully' });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ error: 'Error updating profile' });
+  }
 });
 
 // Get user profile
 router.get('/profile', authenticate, async (req, res) => {
   try {
     const user = await get(
-      'SELECT id, email, username, is_admin FROM users WHERE id = ?',
+      'SELECT id, email, username, name, is_admin FROM users WHERE id = ?',
       [req.userId]
     );
     if (!user) {

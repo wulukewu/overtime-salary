@@ -1,27 +1,26 @@
 <template>
-  <div class="settings">
-    <h1>Settings</h1>
+  <div class="settings-container">
+    <h1>{{ $t('settings.title') }}</h1>
     <div class="settings-content">
-      <div class="salary-section">
-        <h2>Monthly Salary</h2>
-        <form @submit.prevent="updateSalary" class="salary-form">
-          <div class="form-group">
-            <label for="monthly_salary">Monthly Salary:</label>
-            <input
-              type="number"
-              id="monthly_salary"
-              v-model.number="monthly_salary"
-              required
-              min="0"
-            />
-          </div>
-          <button type="submit" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save Salary' }}
-          </button>
-          <div v-if="error" class="error-message">{{ error }}</div>
-          <div v-if="success" class="success-message">{{ success }}</div>
-        </form>
-      </div>
+      <form @submit.prevent="saveSettings" class="settings-form">
+        <div class="form-group">
+          <label for="monthlySalary">{{ $t('settings.monthlySalary') }}:</label>
+          <input
+            type="number"
+            id="monthlySalary"
+            v-model.number="monthlySalary"
+            required
+            min="0"
+          />
+        </div>
+        <button type="submit" :disabled="saving">
+          {{ saving ? $t('settings.saving') : $t('settings.save') }}
+        </button>
+        <div v-if="error" class="error-message">{{ error }}</div>
+        <div v-if="success" class="success-message">
+          {{ $t('settings.success') }}
+        </div>
+      </form>
     </div>
   </div>
 </template>
@@ -29,39 +28,43 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
+import { useI18n } from 'vue-i18n';
 import config from '../config';
 
 export default {
   name: 'UserSettings',
   setup() {
     const store = useStore();
-    const monthly_salary = ref(0);
-    const error = ref('');
-    const success = ref('');
+    const { t } = useI18n();
+    const monthlySalary = ref(0);
     const saving = ref(false);
+    const error = ref('');
+    const success = ref(false);
 
-    const fetchUserSettings = async () => {
+    const fetchSettings = async () => {
       try {
         const response = await fetch(`${config.apiUrl}/api/users/settings`, {
           headers: {
             Authorization: `Bearer ${store.state.token}`,
           },
         });
+
         if (!response.ok) {
-          throw new Error('Failed to fetch settings');
+          throw new Error(t('settings.error'));
         }
+
         const data = await response.json();
-        monthly_salary.value = data.monthly_salary || 0;
+        monthlySalary.value = data.monthly_salary;
       } catch (err) {
-        console.error('Error fetching settings:', err);
         error.value = err.message;
       }
     };
 
-    const updateSalary = async () => {
+    const saveSettings = async () => {
       saving.value = true;
       error.value = '';
-      success.value = '';
+      success.value = false;
+
       try {
         const response = await fetch(`${config.apiUrl}/api/users/settings`, {
           method: 'PUT',
@@ -70,40 +73,39 @@ export default {
             Authorization: `Bearer ${store.state.token}`,
           },
           body: JSON.stringify({
-            monthly_salary: monthly_salary.value,
+            monthly_salary: monthlySalary.value,
           }),
         });
+
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to update salary');
+          throw new Error(t('settings.error'));
         }
-        success.value = 'Salary updated successfully';
-        // Update the store with the new salary
-        store.commit('setMonthlySalary', monthly_salary.value);
+
+        store.commit('setMonthlySalary', monthlySalary.value);
+        success.value = true;
       } catch (err) {
-        console.error('Error updating salary:', err);
         error.value = err.message;
       } finally {
         saving.value = false;
       }
     };
 
-    onMounted(fetchUserSettings);
+    onMounted(fetchSettings);
 
     return {
-      monthly_salary,
+      monthlySalary,
+      saving,
       error,
       success,
-      saving,
-      updateSalary,
+      saveSettings,
     };
   },
 };
 </script>
 
 <style scoped>
-.settings {
-  max-width: 800px;
+.settings-container {
+  max-width: 600px;
   margin: 0 auto;
   padding: 2rem;
 }
@@ -115,11 +117,10 @@ export default {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.salary-form {
+.settings-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  max-width: 400px;
+  gap: 1.5rem;
 }
 
 .form-group {
@@ -128,8 +129,13 @@ export default {
   gap: 0.5rem;
 }
 
+label {
+  font-weight: 500;
+  color: #333;
+}
+
 input {
-  padding: 0.5rem;
+  padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
@@ -151,12 +157,12 @@ button:disabled {
 }
 
 .error-message {
-  color: red;
+  color: #dc3545;
   margin-top: 1rem;
 }
 
 .success-message {
-  color: #4caf50;
+  color: #28a745;
   margin-top: 1rem;
 }
 </style>
