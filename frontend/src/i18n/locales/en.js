@@ -142,6 +142,9 @@ export default {
     deleting: 'Deleting...',
     confirmDelete:
       'Are you sure you want to delete your account? This action cannot be undone.',
+    updateProfile: 'Update Profile',
+    enterName: 'Enter your name',
+    enterEmail: 'Enter your email',
   },
   settings: {
     title: 'Settings',
