@@ -97,6 +97,54 @@
         </form>
       </div>
     </div>
+
+    <!-- Role Change Confirmation Modal -->
+    <div v-if="showRoleChangeModal" class="modal">
+      <div class="modal-content">
+        <h3>{{ $t('admin.confirmRoleChange') }}</h3>
+        <p>{{ roleChangeMessage }}</p>
+        <div class="modal-actions">
+          <button @click="confirmRoleChange" class="confirm-btn">
+            {{ $t('admin.confirm') }}
+          </button>
+          <button @click="showRoleChangeModal = false" class="cancel-btn">
+            {{ $t('admin.cancel') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Password Reset Confirmation Modal -->
+    <div v-if="showResetPasswordModal" class="modal">
+      <div class="modal-content">
+        <h3>{{ $t('admin.confirmResetPassword') }}</h3>
+        <p>{{ $t('admin.resetPasswordConfirmMessage') }}</p>
+        <div class="modal-actions">
+          <button @click="confirmResetPassword" class="confirm-btn">
+            {{ $t('admin.confirm') }}
+          </button>
+          <button @click="showResetPasswordModal = false" class="cancel-btn">
+            {{ $t('admin.cancel') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete User Confirmation Modal -->
+    <div v-if="showDeleteUserModal" class="modal">
+      <div class="modal-content">
+        <h3>{{ $t('admin.confirmDeleteUser') }}</h3>
+        <p>{{ $t('admin.deleteUserConfirmMessage') }}</p>
+        <div class="modal-actions">
+          <button @click="confirmDeleteUser" class="delete-btn">
+            {{ $t('admin.confirm') }}
+          </button>
+          <button @click="showDeleteUserModal = false" class="cancel-btn">
+            {{ $t('admin.cancel') }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -121,6 +169,10 @@ export default {
     const newPassword = ref('');
     const confirmPassword = ref('');
     const passwordError = ref('');
+    const showRoleChangeModal = ref(false);
+    const showResetPasswordModal = ref(false);
+    const showDeleteUserModal = ref(false);
+    const roleChangeMessage = ref('');
 
     const validatePassword = () => {
       if (!newPassword.value || !confirmPassword.value) {
@@ -219,32 +271,46 @@ export default {
       }
     };
 
-    const toggleUserRole = async (user) => {
+    const toggleUserRole = (user) => {
+      selectedUser.value = user;
+      roleChangeMessage.value = user.is_admin
+        ? t('admin.roleChangeToUser', { username: user.username })
+        : t('admin.roleChangeToAdmin', { username: user.username });
+      showRoleChangeModal.value = true;
+    };
+
+    const confirmRoleChange = async () => {
       try {
         const response = await fetch(
-          `${config.apiUrl}/api/users/users/${user.id}/role`,
+          `${config.apiUrl}/api/users/users/${selectedUser.value.id}/role`,
           {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${store.state.token}`,
             },
-            body: JSON.stringify({ is_admin: !user.is_admin }),
+            body: JSON.stringify({ is_admin: !selectedUser.value.is_admin }),
           }
         );
         if (response.ok) {
-          await fetchUsers(); // Refresh the user list
+          await fetchUsers();
+          showRoleChangeModal.value = false;
         }
       } catch (error) {
         console.error('Error updating user role:', error);
       }
     };
 
-    const resetPassword = async (userId) => {
-      resettingPassword.value = userId;
+    const resetPassword = (user) => {
+      selectedUser.value = user;
+      showResetPasswordModal.value = true;
+    };
+
+    const confirmResetPassword = async () => {
+      resettingPassword.value = selectedUser.value.id;
       try {
         const response = await fetch(
-          `${config.apiUrl}/api/users/users/${userId}/reset-password`,
+          `${config.apiUrl}/api/users/users/${selectedUser.value.id}/reset-password`,
           {
             method: 'POST',
             headers: {
@@ -255,25 +321,34 @@ export default {
 
         if (response.ok) {
           const data = await response.json();
-          alert(`Password reset successful. New password: ${data.newPassword}`);
+          store.dispatch('notification/showNotification', {
+            message: t('admin.resetPasswordSuccess', {
+              password: data.newPassword,
+            }),
+            duration: 5000,
+          });
         } else {
           const data = await response.json();
-          error.value = data.error || 'Error resetting password';
+          error.value = data.error || t('admin.resetPasswordError');
         }
       } catch (err) {
-        error.value = 'Error resetting password';
+        error.value = t('admin.resetPasswordError');
       } finally {
         resettingPassword.value = null;
+        showResetPasswordModal.value = false;
       }
     };
 
-    const deleteUser = async (userId) => {
-      if (!confirm('Are you sure you want to delete this user?')) return;
+    const deleteUser = (user) => {
+      selectedUser.value = user;
+      showDeleteUserModal.value = true;
+    };
 
-      deletingUser.value = userId;
+    const confirmDeleteUser = async () => {
+      deletingUser.value = selectedUser.value.id;
       try {
         const response = await fetch(
-          `${config.apiUrl}/api/users/users/${userId}`,
+          `${config.apiUrl}/api/users/users/${selectedUser.value.id}`,
           {
             method: 'DELETE',
             headers: {
@@ -283,13 +358,16 @@ export default {
         );
 
         if (response.ok) {
-          users.value = users.value.filter((user) => user.id !== userId);
+          users.value = users.value.filter(
+            (user) => user.id !== selectedUser.value.id
+          );
+          showDeleteUserModal.value = false;
         } else {
           const data = await response.json();
-          error.value = data.error || 'Error deleting user';
+          error.value = data.error || t('admin.deleteUserError');
         }
       } catch (err) {
-        error.value = 'Error deleting user';
+        error.value = t('admin.deleteUserError');
       } finally {
         deletingUser.value = null;
       }
@@ -308,13 +386,20 @@ export default {
       newPassword,
       confirmPassword,
       passwordError,
+      showRoleChangeModal,
+      showResetPasswordModal,
+      showDeleteUserModal,
+      roleChangeMessage,
       validatePassword,
       showPasswordModal,
       closePasswordModal,
       changePassword,
       toggleUserRole,
+      confirmRoleChange,
       resetPassword,
+      confirmResetPassword,
       deleteUser,
+      confirmDeleteUser,
     };
   },
 };
@@ -444,6 +529,43 @@ button:disabled {
   max-width: 400px;
 }
 
+.modal-content h3 {
+  margin-bottom: 1rem;
+  color: #2c3e50;
+}
+
+.modal-content p {
+  margin-bottom: 1.5rem;
+  color: #666;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.confirm-btn {
+  background-color: #4caf50;
+  color: white;
+}
+
+.cancel-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.confirm-btn:hover,
+.cancel-btn:hover,
+.delete-btn:hover {
+  opacity: 0.9;
+}
+
 .form-group {
   margin-bottom: 1rem;
 }
@@ -460,23 +582,6 @@ button:disabled {
   border-radius: 4px;
 }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.save-btn {
-  background-color: #4caf50;
-  color: white;
-}
-
-.cancel-btn {
-  background-color: #f44336;
-  color: white;
-}
-
 .change-password-btn {
   background-color: #2196f3;
   color: white;
@@ -486,11 +591,5 @@ button:disabled {
   color: #f44336;
   font-size: 0.8rem;
   margin-top: 0.25rem;
-}
-
-.error-message {
-  color: #f44336;
-  margin-top: 1rem;
-  text-align: center;
 }
 </style>
