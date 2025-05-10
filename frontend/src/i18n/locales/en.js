@@ -142,6 +142,9 @@ export default {
     deleting: 'Deleting...',
     confirmDelete:
       'Are you sure you want to delete your account? This action cannot be undone.',
+    updateProfile: 'Update Profile',
+    enterName: 'Enter your name',
+    enterEmail: 'Enter your email',
   },
   settings: {
     title: 'Settings',
@@ -191,6 +194,29 @@ export default {
     confirmPassword: 'Confirm Password',
     update: 'Update',
     cancel: 'Cancel',
+    admin: 'Admin',
+    user: 'User',
+    confirm: 'Confirm',
+    confirmRoleChange: 'Confirm Role Change',
+    roleChangeToUser:
+      "Are you sure you want to change {username}'s role to User?",
+    roleChangeToAdmin:
+      "Are you sure you want to change {username}'s role to Admin? This user will have full administrative access to the system.",
+    lastAdminWarning:
+      'Warning: This is the last admin in the system. Removing admin privileges may lock you out of the admin panel.',
+    cannotRemoveLastAdmin:
+      'Cannot remove admin privileges from the last admin in the system.',
+    confirmRoleChangeToAdmin:
+      'Are you sure you want to grant admin privileges to {username}? This user will have full access to manage all users and system settings.',
+    confirmResetPassword: 'Confirm Password Reset',
+    resetPasswordConfirmMessage:
+      "Are you sure you want to reset this user's password? A new password will be generated.",
+    resetPasswordSuccess: 'Password reset successful. New password: {password}',
+    resetPasswordError: 'Failed to reset password',
+    confirmDeleteUser: 'Confirm User Deletion',
+    deleteUserConfirmMessage:
+      'Are you sure you want to delete this user? This action cannot be undone.',
+    deleteUserError: 'Failed to delete user',
     validation: {
       passwordRequired: 'Password is required',
       passwordTooShort: 'Password must be at least 6 characters',

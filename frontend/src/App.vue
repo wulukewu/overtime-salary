@@ -1,20 +1,27 @@
 <template>
   <div id="app">
-    <nav>
+    <nav :class="{ 'mobile-menu-open': isMobileMenuOpen }">
       <div class="nav-left">
+        <button class="mobile-menu-toggle" @click="toggleMobileMenu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
         <router-link to="/" exact-active-class="no-active-style">
           <img src="@/assets/logo.png" alt="Logo" class="logo" />
         </router-link>
-        <router-link to="/">{{ $t('nav.home') }}</router-link>
-        <router-link to="/dashboard" v-if="isAuthenticated">{{
-          $t('nav.dashboard')
-        }}</router-link>
-        <router-link to="/import-export" v-if="isAuthenticated">{{
-          $t('nav.importExport')
-        }}</router-link>
-        <router-link to="/admin" v-if="isAdmin">{{
-          $t('nav.adminPanel')
-        }}</router-link>
+        <div class="nav-links">
+          <router-link to="/">{{ $t('nav.home') }}</router-link>
+          <router-link to="/dashboard" v-if="isAuthenticated">{{
+            $t('nav.dashboard')
+          }}</router-link>
+          <router-link to="/import-export" v-if="isAuthenticated">{{
+            $t('nav.importExport')
+          }}</router-link>
+          <router-link to="/admin" v-if="isAdmin">{{
+            $t('nav.adminPanel')
+          }}</router-link>
+        </div>
       </div>
       <div class="nav-right">
         <div class="language-switcher">
@@ -26,8 +33,9 @@
           <div class="user-dropdown">
             <span
               class="username"
-              @mouseover="showDropdown = true"
-              @mouseleave="showDropdown = false"
+              @click="toggleUserDropdown"
+              @mouseover="!isMobile && (showDropdown = true)"
+              @mouseleave="!isMobile && (showDropdown = false)"
             >
               {{ username }}
               <i class="dropdown-icon">▼</i>
@@ -35,18 +43,28 @@
             <div
               class="dropdown-menu"
               v-show="showDropdown"
-              @mouseover="showDropdown = true"
-              @mouseleave="showDropdown = false"
+              @mouseover="!isMobile && (showDropdown = true)"
+              @mouseleave="!isMobile && (showDropdown = false)"
             >
-              <router-link to="/profile">{{ $t('nav.profile') }}</router-link>
-              <router-link to="/settings">{{ $t('nav.settings') }}</router-link>
+              <router-link to="/profile" @click="closeMobileMenu">{{
+                $t('nav.profile')
+              }}</router-link>
+              <router-link to="/settings" @click="closeMobileMenu">{{
+                $t('nav.settings')
+              }}</router-link>
               <a @click="logout">{{ $t('nav.logout') }}</a>
             </div>
           </div>
         </template>
         <template v-else>
-          <router-link to="/login">{{ $t('nav.login') }}</router-link>
-          <router-link to="/register">{{ $t('nav.register') }}</router-link>
+          <div class="auth-links">
+            <router-link to="/login" @click="closeMobileMenu">{{
+              $t('nav.login')
+            }}</router-link>
+            <router-link to="/register" @click="closeMobileMenu">{{
+              $t('nav.register')
+            }}</router-link>
+          </div>
         </template>
       </div>
     </nav>
@@ -61,7 +79,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -78,6 +96,9 @@ export default {
     const router = useRouter();
     const { locale } = useI18n();
     const showDropdown = ref(false);
+    const isMobileMenuOpen = ref(false);
+    const isMobile = ref(window.innerWidth <= 768);
+
     const username = computed(
       () => store.state.user?.name || store.state.user?.username || ''
     );
@@ -86,6 +107,31 @@ export default {
     const isAdmin = computed(() => store.state.isAdmin);
     const notification = computed(() => store.state.notification);
     const currentLanguage = computed(() => locale.value);
+
+    const toggleMobileMenu = () => {
+      isMobileMenuOpen.value = !isMobileMenuOpen.value;
+      if (!isMobileMenuOpen.value) {
+        showDropdown.value = false;
+      }
+    };
+
+    const closeMobileMenu = () => {
+      isMobileMenuOpen.value = false;
+      showDropdown.value = false;
+    };
+
+    const toggleUserDropdown = () => {
+      if (isMobile.value) {
+        showDropdown.value = !showDropdown.value;
+      }
+    };
+
+    const handleResize = () => {
+      isMobile.value = window.innerWidth <= 768;
+      if (!isMobile.value) {
+        isMobileMenuOpen.value = false;
+      }
+    };
 
     const toggleLanguage = () => {
       const newLocale = locale.value === 'en' ? 'zh-TW' : 'en';
@@ -121,7 +167,15 @@ export default {
       }
     };
 
-    onMounted(fetchUserProfile);
+    onMounted(() => {
+      window.addEventListener('resize', handleResize);
+      handleResize();
+      fetchUserProfile();
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('resize', handleResize);
+    });
 
     // Watch for token changes to fetch user profile
     watch(
@@ -143,6 +197,11 @@ export default {
       hideNotification,
       currentLanguage,
       toggleLanguage,
+      isMobileMenuOpen,
+      toggleMobileMenu,
+      closeMobileMenu,
+      toggleUserDropdown,
+      isMobile,
     };
   },
 };
@@ -164,10 +223,17 @@ nav {
   align-items: center;
   background-color: #f8f9fa;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .nav-left,
 .nav-right {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.nav-links {
   display: flex;
   gap: 20px;
 }
@@ -237,21 +303,31 @@ nav a.router-link-exact-active {
   color: #dc3545;
 }
 
-.nav-left {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
 .logo {
   height: 44px;
   margin-right: 0;
   display: block;
 }
 
-.no-active-style {
-  background: none !important;
-  color: inherit !important;
+.mobile-menu-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 30px;
+  height: 21px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 10;
+}
+
+.mobile-menu-toggle span {
+  width: 100%;
+  height: 3px;
+  background-color: #2c3e50;
+  border-radius: 3px;
+  transition: all 0.3s ease;
 }
 
 .language-switcher {
@@ -259,18 +335,111 @@ nav a.router-link-exact-active {
 }
 
 .lang-btn {
-  padding: 8px 16px;
+  background: none;
   border: 1px solid #2c3e50;
-  border-radius: 4px;
-  background-color: transparent;
-  color: #2c3e50;
   cursor: pointer;
+  color: #2c3e50;
   font-weight: bold;
-  transition: all 0.3s ease;
+  padding: 8px 16px;
+  border-radius: 4px;
+  transition: all 0.3s;
 }
 
 .lang-btn:hover {
-  background-color: #2c3e50;
-  color: white;
+  background-color: #e9ecef;
+  border-color: #42b983;
+  color: #42b983;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  nav {
+    padding: 12px 16px;
+  }
+
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #f8f9fa;
+    flex-direction: column;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .mobile-menu-open .nav-links {
+    display: flex;
+  }
+
+  .nav-right {
+    gap: 10px;
+  }
+
+  .auth-links {
+    display: none;
+  }
+
+  .mobile-menu-open .auth-links {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #f8f9fa;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .user-dropdown {
+    position: static;
+  }
+
+  .dropdown-menu {
+    position: fixed;
+    top: auto;
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
+
+  .mobile-menu-open .mobile-menu-toggle span:first-child {
+    transform: translateY(9px) rotate(45deg);
+  }
+
+  .mobile-menu-open .mobile-menu-toggle span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .mobile-menu-open .mobile-menu-toggle span:last-child {
+    transform: translateY(-9px) rotate(-45deg);
+  }
+
+  .language-switcher {
+    margin-right: 10px;
+  }
+
+  .lang-btn {
+    padding: 6px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  nav {
+    padding: 8px 12px;
+  }
+
+  .logo {
+    height: 36px;
+  }
+
+  .mobile-menu-toggle {
+    width: 24px;
+    height: 18px;
+  }
 }
 </style>
