@@ -194,6 +194,8 @@ export default {
     confirmPassword: 'Confirm Password',
     update: 'Update',
     cancel: 'Cancel',
+    admin: 'Admin',
+    user: 'User',
     validation: {
       passwordRequired: 'Password is required',
       passwordTooShort: 'Password must be at least 6 characters',

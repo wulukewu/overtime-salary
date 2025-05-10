@@ -187,6 +187,8 @@ export default {
     confirmPassword: '確認密碼',
     update: '更新',
     cancel: '取消',
+    admin: '管理員',
+    user: '使用者',
     validation: {
       passwordRequired: '密碼為必填',
       passwordTooShort: '密碼必須至少6個字元',
