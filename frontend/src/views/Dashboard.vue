@@ -11,7 +11,10 @@
           novalidate
         >
           <div class="form-group">
-            <label>{{ $t('dashboard.monthlySalary') }}: {{ store.state.monthly_salary }}</label>
+            <label
+              >{{ $t('dashboard.monthlySalary') }}:
+              {{ store.state.monthly_salary }}</label
+            >
           </div>
           <div class="form-group">
             <label for="end_hour">{{ $t('dashboard.overtimeEndHour') }}:</label>
@@ -23,7 +26,9 @@
               min="19"
               @blur="validateEndHour"
             />
-            <span v-if="endHourError" class="field-error">{{ endHourError }}</span>
+            <span v-if="endHourError" class="field-error">{{
+              endHourError
+            }}</span>
           </div>
           <div class="form-group">
             <label for="minutes">{{ $t('dashboard.overtimeMinutes') }}:</label>
@@ -36,10 +41,14 @@
               max="59"
               @blur="validateMinutes"
             />
-            <span v-if="minutesError" class="field-error">{{ minutesError }}</span>
+            <span v-if="minutesError" class="field-error">{{
+              minutesError
+            }}</span>
           </div>
           <button type="submit" :disabled="loading">
-            {{ loading ? $t('dashboard.calculating') : $t('dashboard.calculate') }}
+            {{
+              loading ? $t('dashboard.calculating') : $t('dashboard.calculate')
+            }}
           </button>
           <div v-if="result !== null" class="result">
             <h3 v-if="result === 0" class="zero-result">
@@ -48,7 +57,9 @@
             <template v-else>
               <h3>{{ $t('dashboard.calculatedOvertimePay') }}: {{ result }}</h3>
               <button @click="saveRecord" :disabled="saving">
-                {{ saving ? $t('dashboard.saving') : $t('dashboard.saveRecord') }}
+                {{
+                  saving ? $t('dashboard.saving') : $t('dashboard.saveRecord')
+                }}
               </button>
             </template>
           </div>
@@ -63,7 +74,9 @@
             {{ $t('dashboard.newGroup') }}
           </button>
         </div>
-        <div v-if="loadingRecords" class="loading">{{ $t('dashboard.loadingRecords') }}</div>
+        <div v-if="loadingRecords" class="loading">
+          {{ $t('dashboard.loadingRecords') }}
+        </div>
         <div v-else-if="records.length === 0" class="no-records">
           {{ $t('dashboard.noRecords') }}
         </div>
@@ -80,10 +93,13 @@
               <div class="group-item">
                 <div class="group-header" @click="toggleGroup(group)">
                   <div class="group-name">
-                    <span class="collapse-icon">{{ group.collapsed ? '▶' : '▼' }}</span>
+                    <span class="collapse-icon">{{
+                      group.collapsed ? '▶' : '▼'
+                    }}</span>
                     {{ group.name }}
                     <span class="group-total">
-                      ({{ $t('dashboard.total') }}: {{ getGroupTotal(group.id) }})
+                      ({{ $t('dashboard.total') }}:
+                      {{ getGroupTotal(group.id) }})
                     </span>
                   </div>
                   <div class="group-actions">
@@ -141,20 +157,38 @@
                         </div>
                         <div class="record-details">
                           <div class="detail-item">
-                            <span class="detail-label">{{ $t('dashboard.salary') }}:</span>
-                            <span class="detail-value">{{ record.salary }}</span>
+                            <span class="detail-label"
+                              >{{ $t('dashboard.salary') }}:</span
+                            >
+                            <span class="detail-value">{{
+                              record.salary
+                            }}</span>
                           </div>
                           <div class="detail-item">
-                            <span class="detail-label">{{ $t('dashboard.endHour') }}:</span>
-                            <span class="detail-value">{{ record.end_hour }}</span>
+                            <span class="detail-label"
+                              >{{ $t('dashboard.endHour') }}:</span
+                            >
+                            <span class="detail-value">{{
+                              record.end_hour
+                            }}</span>
                           </div>
                           <div class="detail-item">
-                            <span class="detail-label">{{ $t('dashboard.minutes') }}:</span>
-                            <span class="detail-value">{{ record.minutes }}</span>
+                            <span class="detail-label"
+                              >{{ $t('dashboard.minutes') }}:</span
+                            >
+                            <span class="detail-value">{{
+                              record.minutes
+                            }}</span>
                           </div>
                           <div class="detail-item">
-                            <span class="detail-label">{{ $t('dashboard.calculatedOvertimePay') }}:</span>
-                            <span class="detail-value pay-value">{{ record.calculated_pay }}</span>
+                            <span class="detail-label"
+                              >{{
+                                $t('dashboard.calculatedOvertimePay')
+                              }}:</span
+                            >
+                            <span class="detail-value pay-value">{{
+                              record.calculated_pay
+                            }}</span>
                           </div>
                         </div>
                       </div>
@@ -170,7 +204,8 @@
               <div class="group-name">
                 {{ $t('dashboard.ungrouped') }}
                 <span class="group-total">
-                  ({{ $t('dashboard.total') }}: {{ getGroupTotal('ungrouped') }})
+                  ({{ $t('dashboard.total') }}:
+                  {{ getGroupTotal('ungrouped') }})
                 </span>
               </div>
             </div>
@@ -214,20 +249,30 @@
                     </div>
                     <div class="record-details">
                       <div class="detail-item">
-                        <span class="detail-label">{{ $t('dashboard.salary') }}:</span>
+                        <span class="detail-label"
+                          >{{ $t('dashboard.salary') }}:</span
+                        >
                         <span class="detail-value">{{ record.salary }}</span>
                       </div>
                       <div class="detail-item">
-                        <span class="detail-label">{{ $t('dashboard.endHour') }}:</span>
+                        <span class="detail-label"
+                          >{{ $t('dashboard.endHour') }}:</span
+                        >
                         <span class="detail-value">{{ record.end_hour }}</span>
                       </div>
                       <div class="detail-item">
-                        <span class="detail-label">{{ $t('dashboard.minutes') }}:</span>
+                        <span class="detail-label"
+                          >{{ $t('dashboard.minutes') }}:</span
+                        >
                         <span class="detail-value">{{ record.minutes }}</span>
                       </div>
                       <div class="detail-item">
-                        <span class="detail-label">{{ $t('dashboard.calculatedOvertimePay') }}:</span>
-                        <span class="detail-value pay-value">{{ record.calculated_pay }}</span>
+                        <span class="detail-label"
+                          >{{ $t('dashboard.calculatedOvertimePay') }}:</span
+                        >
+                        <span class="detail-value pay-value">{{
+                          record.calculated_pay
+                        }}</span>
                       </div>
                     </div>
                   </div>
@@ -253,7 +298,9 @@
               />
             </div>
             <button type="submit" :disabled="creatingGroup">
-              {{ creatingGroup ? $t('dashboard.creating') : $t('common.submit') }}
+              {{
+                creatingGroup ? $t('dashboard.creating') : $t('common.submit')
+              }}
             </button>
             <button type="button" @click="showNewGroupModal = false">
               {{ $t('dashboard.cancel') }}
@@ -268,7 +315,9 @@
           <h3>{{ $t('dashboard.editGroup') }}</h3>
           <form @submit.prevent="updateGroup">
             <div class="form-group">
-              <label for="editGroupName">{{ $t('dashboard.groupName') }}:</label>
+              <label for="editGroupName"
+                >{{ $t('dashboard.groupName') }}:</label
+              >
               <input
                 type="text"
                 id="editGroupName"
@@ -277,7 +326,9 @@
               />
             </div>
             <button type="submit" :disabled="updatingGroup">
-              {{ updatingGroup ? $t('dashboard.updating') : $t('common.submit') }}
+              {{
+                updatingGroup ? $t('dashboard.updating') : $t('common.submit')
+              }}
             </button>
             <button type="button" @click="editingGroup = null">
               {{ $t('dashboard.cancel') }}
@@ -345,7 +396,11 @@
             </div>
             <div class="modal-actions">
               <button type="submit" :disabled="updatingRecord">
-                {{ updatingRecord ? $t('dashboard.updating') : $t('common.submit') }}
+                {{
+                  updatingRecord
+                    ? $t('dashboard.updating')
+                    : $t('common.submit')
+                }}
               </button>
               <button type="button" @click="editingRecord = null">
                 {{ $t('dashboard.cancel') }}
@@ -967,150 +1022,245 @@ export default {
 
 <style scoped>
 .dashboard {
+  padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+}
+
+.dashboard h1 {
+  margin-bottom: 30px;
+  color: #2c3e50;
 }
 
 .dashboard-content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-top: 2rem;
+  grid-template-columns: 1fr 2fr;
+  gap: 30px;
 }
 
-.calculator-section,
-.records-section {
+.calculator-section {
   background: white;
-  padding: 2rem;
+  padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.calculator-section h2 {
+  margin-bottom: 20px;
+  color: #2c3e50;
 }
 
 .calculator-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 15px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 5px;
 }
 
-input {
-  padding: 0.5rem;
+.form-group label {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.form-group input {
+  padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 1rem;
+  font-size: 16px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #42b983;
 }
 
 button {
-  padding: 0.75rem;
-  background-color: #4caf50;
+  padding: 10px 20px;
+  background-color: #42b983;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #3aa876;
 }
 
 button:disabled {
-  background-color: #cccccc;
+  background-color: #a8d5c2;
   cursor: not-allowed;
 }
 
 .result {
-  margin-top: 1rem;
-  padding: 1rem;
+  margin-top: 20px;
+  padding: 15px;
   background-color: #f8f9fa;
   border-radius: 4px;
 }
 
+.zero-result {
+  color: #6c757d;
+}
+
 .error-message {
-  color: red;
-  margin-top: 1rem;
+  color: #dc3545;
+  margin-top: 10px;
 }
 
 .records-section {
-  position: relative;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .groups-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 20px;
 }
 
 .new-group-button {
-  padding: 0.5rem 1rem;
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.new-group-button:hover {
-  background-color: #357a38;
+  background-color: #2c3e50;
 }
 
-.groups-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.new-group-button:hover {
+  background-color: #1a252f;
+}
+
+.loading,
+.no-records {
+  text-align: center;
+  padding: 20px;
+  color: #6c757d;
 }
 
 .group-item {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1rem;
-  padding: 1rem;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .group-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem;
-  background: #f8f9fa;
-  border-radius: 4px;
+  padding: 12px 15px;
+  background-color: #f8f9fa;
   cursor: pointer;
-  user-select: none;
 }
 
-.group-header:hover {
-  background: #e9ecef;
+.group-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
 }
 
-.group-header h3 {
-  margin: 0;
+.collapse-icon {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.group-total {
+  color: #6c757d;
+  font-size: 0.9em;
 }
 
 .group-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
-.group-actions button {
-  padding: 0.25rem 0.5rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+.edit-button {
+  background-color: #17a2b8;
 }
 
-.group-actions button:hover {
-  background-color: #dee2e6;
+.edit-button:hover {
+  background-color: #138496;
+}
+
+.delete-button {
+  background-color: #dc3545;
+}
+
+.delete-button:hover {
+  background-color: #c82333;
 }
 
 .group-records {
-  padding: 1rem;
-  background-color: #f8f9fa;
+  padding: 15px;
+  background-color: white;
+}
+
+.records-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.record-card {
+  border: 1px solid #ddd;
   border-radius: 4px;
-  margin-top: 0.5rem;
+  padding: 15px;
+  background-color: white;
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.record-date {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.record-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.record-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  font-size: 0.9em;
+  color: #6c757d;
+}
+
+.detail-value {
+  font-weight: 500;
+}
+
+.pay-value {
+  color: #28a745;
+}
+
+.ghost-card {
+  opacity: 0.5;
+  background: #f8f9fa;
 }
 
 .modal {
@@ -1123,211 +1273,106 @@ button:disabled {
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1000;
 }
 
 .modal-content {
   background: white;
-  padding: 2rem;
+  padding: 20px;
   border-radius: 8px;
-  min-width: 300px;
+  width: 90%;
+  max-width: 500px;
+}
+
+.modal-content h3 {
+  margin-bottom: 20px;
+  color: #2c3e50;
 }
 
 .modal-content form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 15px;
 }
 
-.modal-content button {
-  margin-top: 1rem;
+.modal-content .form-group {
+  margin-bottom: 15px;
 }
 
-.edit-button {
-  padding: 0.5rem 1rem;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.edit-button:hover {
-  background-color: #1769aa;
-}
-
-.save-button {
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.save-button:hover {
-  background-color: #357a38;
-}
-
-.cancel-button {
-  background-color: #e0e0e0;
-  color: #333;
-  border: none;
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.cancel-button:hover {
-  background-color: #bdbdbd;
-}
-
-.group-delete-button {
-  background-color: #f44336;
-  color: white;
-  transition: background 0.2s;
-}
-.group-delete-button:hover {
-  background-color: #aa2e25;
-}
-
-.record-delete-button {
-  background-color: #ff9800;
-  color: white;
-  transition: background 0.2s;
-}
-.record-delete-button:hover {
-  background-color: #c66900;
-}
-
-.loading,
-.no-records {
-  text-align: center;
-  padding: 2rem;
-  color: #666;
-}
-
-.delete-button {
-  padding: 5px 10px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  color: white;
-}
-
-.delete-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.records-container {
-  min-height: 50px;
-  padding: 1rem;
-  background-color: #fff;
-  border-radius: 4px;
-  border: 1px dashed #ddd;
-}
-
-.record-card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 1rem;
-  margin-bottom: 1rem;
-  transition: transform 0.2s;
-  cursor: move;
-}
-
-.record-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.record-card.sortable-ghost {
-  opacity: 0.5;
-  background: #e0e0e0;
-}
-
-.record-card.sortable-drag {
-  opacity: 0.5;
-  background: #e0e0e0;
-}
-
-.record-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #eee;
-}
-
-.record-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.record-details {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.detail-label {
-  font-size: 0.875rem;
-  color: #666;
-}
-
-.detail-value {
-  font-weight: bold;
-}
-
-.pay-value {
-  color: #4caf50;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-select {
-  padding: 0.5rem;
+.modal-content input {
+  width: 100%;
+  padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 1rem;
-  width: 100%;
+  font-size: 16px;
 }
 
-.ghost-card {
-  opacity: 0.5;
-  background: #f8f9fa;
-  border: 2px dashed #dee2e6;
+.modal-content input:focus {
+  outline: none;
+  border-color: #42b983;
 }
 
-.collapse-icon {
-  display: inline-block;
-  margin-right: 8px;
-  font-size: 12px;
-  transition: transform 0.2s;
+.modal-content .button-group {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
 }
 
-.zero-result {
-  color: #666;
-  font-style: italic;
+.modal-content .cancel-button {
+  background-color: #6c757d;
 }
 
-.field-error {
-  color: #dc3545;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
+.modal-content .cancel-button:hover {
+  background-color: #5a6268;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 15px;
+  }
+
+  .calculator-section,
+  .records-section {
+    padding: 15px;
+  }
+
+  .records-container {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-content {
+    width: 95%;
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard {
+    padding: 10px;
+  }
+
+  .calculator-section,
+  .records-section {
+    padding: 10px;
+  }
+
+  .group-header {
+    padding: 10px;
+  }
+
+  .record-card {
+    padding: 10px;
+  }
+
+  .modal-content {
+    padding: 10px;
+  }
 }
 </style>

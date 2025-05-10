@@ -90,83 +90,107 @@ export default {
 <style scoped>
 .login-container {
   max-width: 400px;
-  margin: 2rem auto;
-  padding: 2rem;
+  margin: 40px auto;
+  padding: 30px;
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+h2 {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 30px;
+  font-size: 24px;
+}
+
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 20px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #2c3e50;
 }
 
 input {
-  padding: 0.75rem;
+  padding: 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 1rem;
-  transition: border-color 0.2s;
+  font-size: 16px;
+  transition: border-color 0.3s;
 }
 
 input:focus {
   outline: none;
-  border-color: #4caf50;
+  border-color: #42b983;
 }
 
 button {
-  padding: 0.75rem;
-  background-color: #4caf50;
+  padding: 12px;
+  background-color: #42b983;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 16px;
   font-weight: 500;
-  transition: background-color 0.2s;
+  transition: background-color 0.3s;
 }
 
 button:hover {
-  background-color: #45a049;
+  background-color: #3aa876;
 }
 
 button:disabled {
-  background-color: #cccccc;
+  background-color: #a8d5c2;
   cursor: not-allowed;
 }
 
 .error-message {
-  color: red;
-  margin-bottom: 1rem;
+  color: #dc3545;
+  margin-bottom: 20px;
+  text-align: center;
 }
 
 .register-link {
   text-align: center;
-  margin-top: 1rem;
-  color: #666;
+  margin-top: 20px;
+  color: #6c757d;
 }
 
 .register-link a {
-  color: #4caf50;
+  color: #42b983;
   text-decoration: none;
-  font-weight: 500;
 }
 
-.register-link a:hover {
-  text-decoration: underline;
-}
+@media (max-width: 480px) {
+  .login-container {
+    margin: 20px;
+    padding: 20px;
+  }
 
-h2 {
-  text-align: center;
-  color: #333;
-  margin-bottom: 1.5rem;
+  h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  input {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  button {
+    padding: 10px;
+    font-size: 14px;
+  }
 }
 </style>

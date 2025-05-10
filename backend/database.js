@@ -15,6 +15,34 @@ const SALT_ROUNDS = 10;
 // Create database instance
 const db = new sqlite3.Database(DB_FILE);
 
+// Helper methods for database operations
+const all = (sql, params) => {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+};
+
+const get = (sql, params) => {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
+};
+
+const run = (sql, params) => {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function (err) {
+      if (err) reject(err);
+      else resolve(this);
+    });
+  });
+};
+
 const initDatabase = async () => {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
@@ -151,33 +179,11 @@ const initDatabase = async () => {
   });
 };
 
-// Export the database instance and initDatabase function
+// Export the database instance and helper methods
 module.exports = {
   db,
   initDatabase,
-  // Add helper methods for database operations
-  all: (sql, params) => {
-    return new Promise((resolve, reject) => {
-      db.all(sql, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
-  },
-  get: (sql, params) => {
-    return new Promise((resolve, reject) => {
-      db.get(sql, params, (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
-  },
-  run: (sql, params) => {
-    return new Promise((resolve, reject) => {
-      db.run(sql, params, function (err) {
-        if (err) reject(err);
-        else resolve(this);
-      });
-    });
-  },
+  all,
+  get,
+  run,
 };
