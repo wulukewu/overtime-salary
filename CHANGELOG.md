@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/wulukewu/overtime-salary/compare/v1.2.0...v1.2.1) (2025-05-10)
+
+
+### Features
+
+* Chinese Translations ([#22](https://github.com/wulukewu/overtime-salary/issues/22)) ([61e4a56](https://github.com/wulukewu/overtime-salary/commit/61e4a56dd9ccb9d6bf31e48b57bf7a0b3b4492e3))
+
 ## [1.2.0](https://github.com/wulukewu/overtime-salary/compare/v1.1.0...v1.2.0) (2025-05-05)
 
 
