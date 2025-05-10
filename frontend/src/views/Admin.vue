@@ -273,14 +273,51 @@ export default {
 
     const toggleUserRole = (user) => {
       selectedUser.value = user;
-      roleChangeMessage.value = user.is_admin
-        ? t('admin.roleChangeToUser', { username: user.username })
-        : t('admin.roleChangeToAdmin', { username: user.username });
+
+      // Check if this is the last admin
+      const adminCount = users.value.filter((u) => u.is_admin).length;
+      const isLastAdmin = adminCount === 1 && user.is_admin;
+
+      if (isLastAdmin) {
+        store.dispatch('notification/showNotification', {
+          message: t('admin.cannotRemoveLastAdmin'),
+          type: 'error',
+          duration: 5000,
+        });
+        return;
+      }
+
+      if (user.is_admin) {
+        roleChangeMessage.value = t('admin.roleChangeToUser', {
+          username: user.username,
+        });
+        if (isLastAdmin) {
+          roleChangeMessage.value += '\n\n' + t('admin.lastAdminWarning');
+        }
+      } else {
+        roleChangeMessage.value = t('admin.confirmRoleChangeToAdmin', {
+          username: user.username,
+        });
+      }
       showRoleChangeModal.value = true;
     };
 
     const confirmRoleChange = async () => {
       try {
+        // Check again before making the change
+        const adminCount = users.value.filter((u) => u.is_admin).length;
+        const isLastAdmin = adminCount === 1 && selectedUser.value.is_admin;
+
+        if (isLastAdmin) {
+          store.dispatch('notification/showNotification', {
+            message: t('admin.cannotRemoveLastAdmin'),
+            type: 'error',
+            duration: 5000,
+          });
+          showRoleChangeModal.value = false;
+          return;
+        }
+
         const response = await fetch(
           `${config.apiUrl}/api/users/users/${selectedUser.value.id}/role`,
           {
@@ -295,9 +332,21 @@ export default {
         if (response.ok) {
           await fetchUsers();
           showRoleChangeModal.value = false;
+        } else {
+          const data = await response.json();
+          store.dispatch('notification/showNotification', {
+            message: data.error || t('admin.roleChangeError'),
+            type: 'error',
+            duration: 5000,
+          });
         }
       } catch (error) {
         console.error('Error updating user role:', error);
+        store.dispatch('notification/showNotification', {
+          message: t('admin.roleChangeError'),
+          type: 'error',
+          duration: 5000,
+        });
       }
     };
 

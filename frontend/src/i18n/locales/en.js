@@ -198,14 +198,24 @@ export default {
     user: 'User',
     confirm: 'Confirm',
     confirmRoleChange: 'Confirm Role Change',
-    roleChangeToUser: 'Are you sure you want to change {username}\'s role to User?',
-    roleChangeToAdmin: 'Are you sure you want to change {username}\'s role to Admin?',
+    roleChangeToUser:
+      "Are you sure you want to change {username}'s role to User?",
+    roleChangeToAdmin:
+      "Are you sure you want to change {username}'s role to Admin? This user will have full administrative access to the system.",
+    lastAdminWarning:
+      'Warning: This is the last admin in the system. Removing admin privileges may lock you out of the admin panel.',
+    cannotRemoveLastAdmin:
+      'Cannot remove admin privileges from the last admin in the system.',
+    confirmRoleChangeToAdmin:
+      'Are you sure you want to grant admin privileges to {username}? This user will have full access to manage all users and system settings.',
     confirmResetPassword: 'Confirm Password Reset',
-    resetPasswordConfirmMessage: 'Are you sure you want to reset this user\'s password? A new password will be generated.',
+    resetPasswordConfirmMessage:
+      "Are you sure you want to reset this user's password? A new password will be generated.",
     resetPasswordSuccess: 'Password reset successful. New password: {password}',
     resetPasswordError: 'Failed to reset password',
     confirmDeleteUser: 'Confirm User Deletion',
-    deleteUserConfirmMessage: 'Are you sure you want to delete this user? This action cannot be undone.',
+    deleteUserConfirmMessage:
+      'Are you sure you want to delete this user? This action cannot be undone.',
     deleteUserError: 'Failed to delete user',
     validation: {
       passwordRequired: 'Password is required',

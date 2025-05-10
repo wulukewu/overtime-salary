@@ -192,9 +192,16 @@ export default {
     confirm: '確認',
     confirmRoleChange: '確認變更角色',
     roleChangeToUser: '確定要將 {username} 的角色變更為使用者嗎？',
-    roleChangeToAdmin: '確定要將 {username} 的角色變更為管理員嗎？',
+    roleChangeToAdmin:
+      '確定要將 {username} 的角色變更為管理員嗎？此使用者將擁有系統的完整管理權限。',
+    lastAdminWarning:
+      '警告：這是系統中最後一位管理員。移除管理員權限可能會導致您無法訪問管理面板。',
+    cannotRemoveLastAdmin: '無法移除系統中最後一位管理員的權限。',
+    confirmRoleChangeToAdmin:
+      '確定要授予 {username} 管理員權限嗎？此使用者將擁有管理所有使用者和系統設定的完整權限。',
     confirmResetPassword: '確認重設密碼',
-    resetPasswordConfirmMessage: '確定要重設此使用者的密碼嗎？系統將生成新密碼。',
+    resetPasswordConfirmMessage:
+      '確定要重設此使用者的密碼嗎？系統將生成新密碼。',
     resetPasswordSuccess: '密碼重設成功。新密碼：{password}',
     resetPasswordError: '重設密碼失敗',
     confirmDeleteUser: '確認刪除使用者',
